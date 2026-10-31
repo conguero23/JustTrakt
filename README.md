@@ -10,11 +10,11 @@ Your Trakt history, right on JustWatch. An independent Chrome extension with:
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. It is not affiliated with JustWatch.
 
-[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.3.1) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
+[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.4.0) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
 
 ## Install from a GitHub release
 
-1. Download **justtrakt-1.3.1.zip** from the repository's Releases page.
+1. Download **justtrakt-1.4.0.zip** from the repository's Releases page.
 2. Extract it to a permanent folder. Keep that folder; Chrome loads the files from there.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. In [Trakt Developers](https://developer.trakt.tv/), create a **Development** app with redirect URI **http://localhost**. Trakt may require your verified GitHub account. The form currently limits development apps to localhost callbacks and production registration requires contacting Trakt.
@@ -36,7 +36,15 @@ Sync checks run approximately every 30 minutes; unchanged activity normally need
 
 Ratings load on demand and cache for 24 hours (up to 1,500 titles). Watchlist snapshots cache for five minutes. The extension checks membership before offering Add. Saved items offer removal when clicked, with the action described in the button tooltip and accessible label. Only clicks write to Trakt. Trakt account limits and network errors appear next to the control. Provider offer links keep their normal behavior.
 
-## New in 1.3.0
+## New in 1.4.0: On Trakt
+
+The extension now adds **Last seen YYYY-MM-DD** to movie covers and the movie information page on `app.trakt.tv` and `trakt.tv`. It uses exact movie slugs/IDs and the watch history already synced in the extension; no extra API calls or website session access are needed. Unknown/unwatched movies receive no date. This shows the extension's connected account, identified in the tooltip, even if the website is signed in as someone else. Disable the feature with **On Trakt - Movie last-seen dates** in the popup.
+
+Watchlist checking, adding and removing now show a spinner with an accessible busy state. The button stays disabled during the request, and errors clear the spinner for retry. Reduced-motion preferences are respected.
+
+Trakt's live automated browser view returned a 403 response. Card/detail selectors were checked against Trakt's public frontend source (CardCover, SummaryPoster and MediaSummary); DOM fixture tests cover restoration, navigation and disconnect. A normal-session visual check is still needed.
+
+## Added in 1.3.0
 
 - **Hide watched titles in grids** removes fully watched cards locally. The floating **Show all** button reverses it, and detail pages remain visible. This filters loaded cards; it does not change JustWatch's search totals.
 - Click an **In Trakt watchlist** button to remove the item; the tooltip and accessible label describe removal. New items still offer Add. History stays read-only.
@@ -58,7 +66,7 @@ Automatic browser inspection was blocked by JustWatch. Unit and DOM tests use fi
 
 No developer backend, analytics or telemetry. Account data and OAuth tokens are kept in local browser extension storage, not Chrome Sync. Trakt receives the requests needed for authentication, matching, ratings, history and clicked watchlist adds. Read [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
 
-Permissions: `storage` caches data/settings, `alarms` schedules sync, `identity` handles the optional production PKCE login callback. Host access is limited to Trakt API/authentication, JustWatch, and the public GitHub release-list endpoint. No remotely hosted JavaScript runs in the extension.
+Permissions: `storage` caches data/settings, `alarms` schedules sync, `identity` handles the optional production PKCE login callback. Host access is limited to Trakt API/authentication, Trakt website pages for last-seen annotations, JustWatch, and the public GitHub release-list endpoint. No remotely hosted JavaScript runs in the extension.
 
 **Disconnect** clears local account data and caches, retaining display preferences. It does not delete your Trakt data or revoke the app on Trakt. You can revoke access in Trakt's connected-app settings. Uninstall clears remaining extension settings.
 

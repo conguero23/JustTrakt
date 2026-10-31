@@ -8,6 +8,14 @@ developer-operated backend, analytics, ads, telemetry, or crash-report service.
 Updated for version 1.3.0: GitHub release checks and clicked watchlist removals
 are described below.
 
+Version 1.4.0 also reads movie paths from Trakt's rendered movie links and the
+current movie-page URL to match them against your existing local history. It
+displays Last seen dates on covers and information pages, using the account
+connected to the extension, which may differ from the website's signed-in account.
+This feature performs no extra title/history API calls and can be disabled under
+On Trakt in the popup. Access to app.trakt.tv and trakt.tv is used to render these
+annotations; no page cookies, form contents or website session tokens are read.
+
 ## Data used
 
 - Your public Trakt Client ID and OAuth access/refresh tokens, to connect to Trakt.

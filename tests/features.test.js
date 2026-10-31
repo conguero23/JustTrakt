@@ -84,6 +84,21 @@ test('watchlist click bypasses site card handlers and displays API errors',async
   assert.equal(doc.querySelector('.justtrakt-watchlist').disabled,false);
 });
 
+test('add/remove loader stays visible until completion, prevents duplicate clicks, and clears on failure',async t=>{
+  const {dom,doc}=page();t.after(()=>dom.window.close());await wait();
+  const previous=dom.window.chrome.runtime.sendMessage;let complete,mutations=0;
+  dom.window.chrome.runtime.sendMessage=message=>{
+    if(['addWatchlist','removeWatchlist'].includes(message.type)){mutations++;return new Promise(resolve=>{complete=resolve;});}
+    return previous(message);
+  };
+  const button=doc.querySelector('.justtrakt-watchlist');
+  button.click();assert.equal(button.getAttribute('aria-busy'),'true');assert.equal(button.disabled,true);assert.match(button.textContent,/Adding/);
+  button.click();assert.equal(mutations,1);
+  complete({ok:true,inWatchlist:true});await wait();assert.equal(button.getAttribute('aria-busy'),'false');assert.equal(button.disabled,false);
+  button.click();assert.equal(button.getAttribute('aria-busy'),'true');assert.match(button.textContent,/Removing/);
+  complete({ok:false,error:'Network unavailable'});await wait();assert.equal(button.getAttribute('aria-busy'),'false');assert.equal(button.disabled,false);assert.match(doc.querySelector('.justtrakt-action-error').textContent,/Network unavailable/);
+});
+
 for (const [route,title,type] of [['tv-show/time-2021','Time','show'],['movie/inception','Inception','movie']]) {
   test(`detail page ${type} has a hero rating and independent watchlist action`,async t=>{
     const dom=new JSDOM(`<main><div class="title-detail-hero"><div class="title-detail-hero__details"><h1>${title} <span class="release-year">(${type==='show'?2021:2010})</span></h1><div class="title-detail-hero-details"><div class="hidden-horizontal-scrollbar__items"><span>IMDb 8.2</span></div></div></div></div><div class="title-sidebar"><div class="poster-detail-infos"><div class="jw-scoring-listing">IMDb 8.2</div></div></div><div class="offer-container"><button class="offer__cta">Watch Now</button></div><a href="/us/movie/other">Other movie</a><a href="/us/tv-show/unrelated">Unrelated show</a></main>`,{url:`https://www.justwatch.com/us/${route}`,runScripts:'outside-only'});

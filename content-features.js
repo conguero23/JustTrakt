@@ -59,8 +59,11 @@
     if (!node) { node=document.createElement('span'); node.className='justtrakt-action-error'; node.setAttribute('role','status'); button.after(node); }
     node.textContent=error.message;
   }
+  function busy(button,text){
+    button.disabled=true;button.setAttribute('aria-busy','true');button.setAttribute('aria-live','polite');button.textContent=text;
+  }
   async function checkMembership(button, item, key) {
-    button.disabled=true; button.textContent='Checking Trakt watchlist…';
+    busy(button,'Checking Trakt watchlist…');
     try {
       let cached=memberships.get(key);
       if (!cached || cached.until<Date.now()) {
@@ -79,6 +82,7 @@
       if (button.dataset.key!==key) return;
       button.justtraktNeedsCheck=true; button.disabled=false;button.textContent='Retry watchlist check';showError(button,error);
     }
+    finally{if(button.dataset.key===key && !button.justtraktAdding)button.setAttribute('aria-busy','false');}
   }
   // Handle our action before JustWatch's card navigation handlers see the click.
   document.addEventListener('click', e=> {
@@ -99,7 +103,7 @@
         if (button.justtraktNeedsCheck) { await checkMembership(button,selected,selectedKey);return; }
         button.justtraktAdding=true;
         const removing=button.justtraktSaved;
-        button.disabled=true; button.textContent=removing?'Removing from Trakt…':'Adding to Trakt…';
+        busy(button,removing?'Removing from Trakt…':'Adding to Trakt…');
         try {
           await send(removing?'removeWatchlist':'addWatchlist',selected);
           memberships.set(selectedKey,{promise:Promise.resolve({inWatchlist:!removing}),until:Date.now()+60000});
@@ -109,11 +113,12 @@
             showError(button,error);
           }
         }
-        finally { button.justtraktAdding=false; }
+        finally { if(button.dataset.key===selectedKey){button.justtraktAdding=false;button.setAttribute('aria-busy','false');} }
       };
     }
     if (button.dataset.key !== key) {
       button.dataset.key=key; button.justtraktItem=item;
+      button.justtraktAdding=false;
       button.justtraktNeedsCheck=true;
       checkMembership(button,item,key);
       button.parentElement.querySelector('.justtrakt-action-error')?.remove();

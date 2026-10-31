@@ -1,4 +1,4 @@
-import { defaults, settings, buildIndex, match, watchedDate, diagnostic } from './core.js';
+import { defaults, settings, buildIndex, match, watchedDate, diagnostic, movieDates } from './core.js';
 import { createUpdateChecker } from './updates.js';
 import { createFeatures } from './trakt-features.js';
 import { AUTH, createLogin, tokenBody } from './auth.js';
@@ -126,11 +126,14 @@ const checkUpdates=createUpdateChecker({read,save:value=>chrome.storage.local.se
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const fromPopup = sender.url === chrome.runtime.getURL('popup.html');
   let fromJustWatch = false;
+  let fromTrakt=false;
   try { const url = new URL(sender.url); fromJustWatch = url.protocol === 'https:' && (url.hostname === 'justwatch.com' || url.hostname.endsWith('.justwatch.com')); } catch {}
-  if (!fromPopup && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
+  try{const url=new URL(sender.url);fromTrakt=url.protocol==='https:' && ['app.trakt.tv','trakt.tv'].includes(url.hostname);}catch{}
+  if (!fromPopup && !(fromTrakt && message.type==='traktMovieDates') && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
   (async () => {
     const state = await read();
     switch (message.type) {
+      case 'traktMovieDates': return {dates:movieDates(state,Array.isArray(message.slugs)?message.slugs:[])};
       case 'titleDetail': return { detail: await features.detail(message.item) };
       case 'titleInfo': return {info:await features.info(message.item)};
       case 'addWatchlist': return await features.add(message.item);

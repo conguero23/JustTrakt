@@ -18,7 +18,7 @@ async function render() {
   $('account').textContent = state.connected ? state.username ? `Connected as @${state.username}` : 'Trakt connected' : 'Connect your watch history.';
   $('movies').textContent = state.counts.movies.toLocaleString(); $('shows').textContent = state.counts.shows.toLocaleString();
   $('lastSync').textContent = state.lastSync ? `Synced ${new Date(state.lastSync).toLocaleString()}` : 'Never synced';
-  if (!editing) for (const key of ['minProgress','completeProgress','dimWatched','showProgress','hideWatched','showDiagnostics','checkUpdates']) { const input = $(key); if (input.type === 'checkbox') input.checked = state.settings[key] ?? key==='checkUpdates'; else input.value = state.settings[key]; }
+  if (!editing) for (const key of ['minProgress','completeProgress','dimWatched','showProgress','hideWatched','showDiagnostics','checkUpdates','traktLastSeen']) { const input = $(key); if (input.type === 'checkbox') input.checked = state.settings[key] ?? ['checkUpdates','traktLastSeen'].includes(key); else input.value = state.settings[key]; }
   const update=state.updates?.available;
   $('updateNotice').hidden=!update || state.settings.checkUpdates===false;
   if(update){$('updateLink').href=update.url;$('updateLink').textContent=`JustTrakt ${update.version}${update.prerelease?' beta':''} is available`;}
@@ -36,7 +36,7 @@ $('disconnect').onclick = () => act($('disconnect'), () => send('disconnect'));
 $('checkUpdate').onclick = () => act($('checkUpdate'),()=>send('checkUpdates'));
 $('copyRedirect').onclick = () => act($('copyRedirect'), async () => { await navigator.clipboard.writeText($('redirectUri').value); notice('Redirect URL copied.'); });
 $('settings').addEventListener('input', () => { editing = true; });
-$('settings').addEventListener('submit', e => { e.preventDefault(); act($('save'), async () => { await send('settings', { settings: { minProgress: Number($('minProgress').value), completeProgress: Number($('completeProgress').value), dimWatched: $('dimWatched').checked, showProgress: $('showProgress').checked, hideWatched:$('hideWatched').checked, showDiagnostics:$('showDiagnostics').checked, checkUpdates:$('checkUpdates').checked } }); editing = false; notice('Preferences saved.'); }); });
+$('settings').addEventListener('submit', e => { e.preventDefault(); act($('save'), async () => { await send('settings', { settings: { minProgress: Number($('minProgress').value), completeProgress: Number($('completeProgress').value), dimWatched: $('dimWatched').checked, showProgress: $('showProgress').checked, hideWatched:$('hideWatched').checked, showDiagnostics:$('showDiagnostics').checked, checkUpdates:$('checkUpdates').checked, traktLastSeen:$('traktLastSeen').checked } }); editing = false; notice('Preferences saved.'); }); });
 let refreshing=false;
 setInterval(async () => { if(refreshing)return;refreshing=true;try { await send('pollDevice');await render(); } catch(e) { notice(e.message); }finally{refreshing=false;} }, 1500);
 render().catch(e => notice(e.message));

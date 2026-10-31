@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0 — 2026-10-31
+
+- Animated, accessible loading indicators for checking, adding and removing watchlist items, with duplicate-click protection and reduced-motion support.
+- Last seen movie dates on Trakt's own covers and information pages, matched by exact cached slug/ID without extra API calls.
+- New On Trakt preference to disable last-seen annotations; tooltips identify the extension's connected account.
+- Restore dates after page updates and clear them on disconnect/navigation. JustWatch's existing last-watched dates remain unchanged.
+- Adds content-script access to app.trakt.tv and trakt.tv for the new section.
+
 ## 1.3.1 — 2026-10-31
 
 - Fix registration for personal development apps, which accept localhost redirects only.

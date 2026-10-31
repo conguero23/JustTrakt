@@ -1,4 +1,4 @@
-export const defaults = { minProgress: 5, completeProgress: 90, dimWatched: false, showProgress: true, hideWatched: false, showDiagnostics: false, checkUpdates: true };
+export const defaults = { minProgress: 5, completeProgress: 90, dimWatched: false, showProgress: true, hideWatched: false, showDiagnostics: false, checkUpdates: true, traktLastSeen: true };
 export function settings(input = {}) {
   const result = { ...defaults, ...input };
   if (!Number.isFinite(result.minProgress) || !Number.isFinite(result.completeProgress) || result.minProgress < 0 || result.completeProgress > 100 || result.minProgress >= result.completeProgress) throw new Error('Thresholds must satisfy 0 ≤ minimum < complete ≤ 100.');
@@ -39,6 +39,18 @@ export function watchedDate(status, now = Date.now()) {
   if(cutoff.getUTCMonth()!==month)cutoff.setUTCDate(0);
   if (status.id?.startsWith('show:') && date.getTime() >= cutoff.getTime()) return null;
   return `Last watched ${date.toISOString().slice(0,10)}`;
+}
+export function movieDates(state, slugs, now=Date.now()) {
+  const dates=new Map();
+  if(state.tokens && state.settings?.traktLastSeen!==false)for(const row of state.cache?.movies || []){
+    if(row.plays<1)continue;
+    const date=watchedDate({id:`movie:${row.movie.ids.trakt}`,lastWatchedAt:row.last_watched_at},now);
+    if(!date)continue;
+    const value={date:date.replace('Last watched ','') ,username:state.username || null};
+    if(row.movie.ids.slug)dates.set(row.movie.ids.slug,value);
+    dates.set(String(row.movie.ids.trakt),value);
+  }
+  return slugs.slice(0,500).map(slug=>dates.get(slug) || null);
 }
 export function diagnostic(state, item, status = match(state.index || {}, item)) {
   if (!state.tokens) return 'Connect Trakt in the extension popup.';
