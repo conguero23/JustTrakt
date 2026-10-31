@@ -2,11 +2,18 @@ const $ = id => document.getElementById(id);
 async function send(type, data = {}) { const result = await chrome.runtime.sendMessage({ type, ...data }); if (!result.ok) throw new Error(result.error); return result; }
 function notice(text) { $('notice').textContent = text || ''; $('notice').hidden = !text; }
 let editing = false;
+let pkceRedirect='';
+function loginMethod(){
+  const pkce=$('loginMode').value==='pkce';
+  $('redirectUri').value=pkce?pkceRedirect:'http://localhost';
+  $('loginHelp').textContent=pkce?'For an approved production app: register the exact HTTPS callback below in Trakt settings, then enter its public Client ID. Development apps cannot use this callback.':'Create a Development app at developer.trakt.tv with http://localhost as its redirect URI. Sign-in uses an activation code; no localhost server or Client Secret is needed. Only the owner and invited users can sign into a development app.';
+}
 async function render() {
   const state = await send('state');
-  $('credentials').hidden = state.connected || state.connecting;
+  $('credentials').hidden = state.connected || state.connecting || !!state.device;
   $('connected').hidden = !state.connected; $('connecting').hidden = !state.connecting;
-  $('redirectUri').value=state.redirectUri;
+  $('deviceLogin').hidden=!state.device;if(state.device)$('code').textContent=state.device.user_code;
+  pkceRedirect=state.redirectUri;loginMethod();
   $('disconnect').hidden = !state.connected; $('dot').classList.toggle('online', state.connected);
   $('account').textContent = state.connected ? state.username ? `Connected as @${state.username}` : 'Trakt connected' : 'Connect your watch history.';
   $('movies').textContent = state.counts.movies.toLocaleString(); $('shows').textContent = state.counts.shows.toLocaleString();
@@ -21,12 +28,15 @@ async function render() {
   return state;
 }
 async function act(button, action) { button.disabled = true; notice(''); try { await action(); await render(); } catch(e) { notice(e.message); } finally { button.disabled = false; } }
-$('credentials').addEventListener('submit', e => { e.preventDefault(); act($('connect'), async () => { await send('connect', { clientId: $('clientId').value }); }); });
+$('credentials').addEventListener('submit', e => { e.preventDefault(); act($('connect'), async () => { await send('connect', { clientId: $('clientId').value,mode:$('loginMode').value }); }); });
+$('loginMode').onchange=loginMethod;
+$('cancelLogin').onclick=()=>act($('cancelLogin'),()=>send('cancelLogin'));
 $('sync').onclick = () => act($('sync'), () => send('sync'));
 $('disconnect').onclick = () => act($('disconnect'), () => send('disconnect'));
 $('checkUpdate').onclick = () => act($('checkUpdate'),()=>send('checkUpdates'));
 $('copyRedirect').onclick = () => act($('copyRedirect'), async () => { await navigator.clipboard.writeText($('redirectUri').value); notice('Redirect URL copied.'); });
 $('settings').addEventListener('input', () => { editing = true; });
 $('settings').addEventListener('submit', e => { e.preventDefault(); act($('save'), async () => { await send('settings', { settings: { minProgress: Number($('minProgress').value), completeProgress: Number($('completeProgress').value), dimWatched: $('dimWatched').checked, showProgress: $('showProgress').checked, hideWatched:$('hideWatched').checked, showDiagnostics:$('showDiagnostics').checked, checkUpdates:$('checkUpdates').checked } }); editing = false; notice('Preferences saved.'); }); });
-setInterval(async () => { try { await render(); } catch(e) { notice(e.message); } }, 1500);
+let refreshing=false;
+setInterval(async () => { if(refreshing)return;refreshing=true;try { await send('pollDevice');await render(); } catch(e) { notice(e.message); }finally{refreshing=false;} }, 1500);
 render().catch(e => notice(e.message));

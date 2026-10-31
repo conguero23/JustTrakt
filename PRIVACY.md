@@ -21,8 +21,14 @@ are described below.
 
 Data is stored in `chrome.storage.local` in your browser profile, not Chrome Sync.
 This is not an encrypted vault; protect access to your computer and profile.
-OAuth PKCE uses an ephemeral verifier in service-worker memory; the extension
+The optional production PKCE flow uses an ephemeral verifier in service-worker memory; the extension
 does not request, ship, or retain a Trakt Client Secret or Trakt password.
+
+Personal development apps use device-code authentication. Temporary device/user
+codes and their polling/expiry metadata are kept locally until approval,
+cancellation, denial or expiration is processed. Only the public user code is
+displayed in the popup; the private device code is sent only to Trakt's auth host.
+This flow does not contact localhost or run a local server.
 
 Trakt receives authentication requests, title lookups, account/history/watchlist
 requests, and watchlist adds when you click Add. Title IDs or title/year search

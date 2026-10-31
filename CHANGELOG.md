@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1 — 2026-10-31
+
+- Fix registration for personal development apps, which accept localhost redirects only.
+- Default to secret-free device-code login using auth.trakt.tv; register http://localhost in Trakt, with no server needed.
+- Retain PKCE as an explicit option for approved production apps.
+- Resume pending device authorization after popup closure, honor polling intervals/429 backoff, and handle cancellation, denial and expiry.
+- Document development-app owner/invited-user restrictions instead of implying production access is freely available.
+
 ## 1.3.0 — 2026-10-31
 
 - Optional hide-watched filter with a Show all control; detail pages stay accessible.

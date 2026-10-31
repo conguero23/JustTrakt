@@ -8,7 +8,7 @@
 - A Trakt account for the final live sign-in/sync/watchlist checks.
 - A decision about JustWatch's terms: this code preparation does not grant permission from JustWatch. Its terms restrict automated extraction and modification. Resolve that question before making a public release; see README.
 
-This build uses personal public Client IDs. Each installer registers their own Trakt app using the redirect URL shown in the popup. There is no shared Client Secret, publisher backend, or paid hosting requirement. A shared publisher Client ID could simplify onboarding later, but is not configured here.
+This build uses personal public Client IDs. Each installer creates their own Development app with http://localhost and uses the default device-code mode. Production apps require Trakt approval; only those apps should use the optional HTTPS PKCE callback. There is no shared Client Secret, publisher backend, or paid hosting requirement. A shared publisher Client ID could simplify onboarding later, but is not configured here.
 
 ## Validate locally
 
@@ -19,11 +19,11 @@ npm test
 npm run package
 ```
 
-Load the generated installable ZIP after extracting it to a permanent folder. Test this exact packaged build, not just the source folder. Authentication changed to PKCE in 1.2.0; disconnect/reconnect if upgrading from an earlier device-code build. The stable public key introduced in 1.2.0 is unchanged in 1.3.0. Do not delete an old install until you are comfortable with the new install. Account data remains on Trakt.
+Load the generated installable ZIP after extracting it to a permanent folder. Test this exact packaged build, not just the source folder. Authentication changed to PKCE in 1.2.0; disconnect/reconnect if upgrading from an earlier device-code build. The stable public key introduced in 1.2.0 is unchanged in 1.3.1. Do not delete an old install until you are comfortable with the new install. Account data remains on Trakt.
 
 Before publishing, manually confirm:
 
-- The popup callback URL exactly matches your Trakt app registration, and PKCE sign-in succeeds.
+- Default device-code login succeeds for a Development app registered with http://localhost. Code approval, expiry, denial and cancellation behave correctly. If testing an approved production app, verify its optional PKCE callback separately.
 - Closing/declining the login window produces an understandable error and allows retry.
 - Movie and show badges, progress and dimming work across browse/search/scroll/detail pages.
 - An item already in your Trakt watchlist never offers Add; a new Add appears in your actual Trakt account.
@@ -40,7 +40,7 @@ Create an empty GitHub repository without an auto-generated README/license. From
 ```powershell
 git init
 git add .
-git commit -m "Prepare JustTrakt 1.3.0 release"
+git commit -m "Prepare JustTrakt 1.3.1 release"
 git branch -M main
 git remote add origin https://github.com/YOUR-USERNAME/JustTrakt.git
 git push -u origin main
@@ -48,14 +48,14 @@ git push -u origin main
 
 Sign in to GitHub when prompted. `.gitignore` excludes node_modules, generated ZIPs, browser diagnostics and local secrets. GitHub Actions runs tests and creates downloadable artifacts automatically after pushing. The upload does not publish a GitHub Release by itself.
 
-No Git? Extract `dist/justtrakt-1.3.0-source.zip`, then upload its contents through **Add file → Upload files**. Ensure the `.github` directory is included if you want CI.
+No Git? Extract `dist/justtrakt-1.3.1-source.zip`, then upload its contents through **Add file → Upload files**. Ensure the `.github` directory is included if you want CI.
 
 ## Create the downloadable release
 
 1. In your repository, choose **Releases → Draft a new release**.
-2. Create tag `v1.3.0`, target `main`, title `JustTrakt 1.3.0`.
+2. Create tag `v1.3.1`, target `main`, title `JustTrakt 1.3.1`.
 3. Paste RELEASE_NOTES.md into the description.
-4. Attach `dist/justtrakt-1.3.0.zip` and `dist/SHA256SUMS.txt`. Optionally also attach the source ZIP (its hash is included).
+4. Attach `dist/justtrakt-1.3.1.zip` and `dist/SHA256SUMS.txt`. Optionally also attach the source ZIP (its hash is included).
 5. Mark it as a pre-release until live checks pass. Review the description, files and legal/branding notes, then publish when ready.
 6. In repository settings, enable **Issues** and **Security → Private vulnerability reporting**. Use the Privacy and Security documents as the support policy; avoid asking users for storage exports.
 

@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {JSDOM} from 'jsdom';
-test('public popup shows callback, public Client ID and privacy disclosure without secret input',async t=>{
+test('public popup defaults to development device login and keeps production PKCE available',async t=>{
   const dom=new JSDOM(readFileSync(new URL('../popup.html',import.meta.url),'utf8'),{url:'chrome-extension://test/popup.html',runScripts:'outside-only'});
   t.after(()=>dom.window.close());
   const calls=[],state={ok:true,connected:false,connecting:false,redirectUri:'https://test.chromiumapp.org/trakt',counts:{movies:0,shows:0},settings:{minProgress:5,completeProgress:90,dimWatched:false,showProgress:true}};
@@ -10,7 +10,11 @@ test('public popup shows callback, public Client ID and privacy disclosure witho
   dom.window.eval(readFileSync(new URL('../popup.js',import.meta.url),'utf8'));
   await new Promise(resolve=>setTimeout(resolve,20));
   const d=dom.window.document;
+  assert.equal(d.querySelector('#redirectUri').value,'http://localhost');
+  assert.equal(d.querySelector('#loginMode').value,'device');
+  d.querySelector('#loginMode').value='pkce';d.querySelector('#loginMode').dispatchEvent(new dom.window.Event('change'));
   assert.equal(d.querySelector('#redirectUri').value,state.redirectUri);
+  d.querySelector('#loginMode').value='device';d.querySelector('#loginMode').dispatchEvent(new dom.window.Event('change'));
   assert.equal(d.querySelector('input[type="password"]'),null);
   assert.equal(d.querySelector('#clientSecret'),null);
   assert.equal(d.querySelector('#credentials').hidden,false);
@@ -20,5 +24,5 @@ test('public popup shows callback, public Client ID and privacy disclosure witho
   d.querySelector('#credentials').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));
   await new Promise(resolve=>setTimeout(resolve,20));
   const login=calls.find(c=>c.type==='connect');
-  assert.equal(login.clientId,'a'.repeat(64));assert.equal('clientSecret' in login,false);
+  assert.equal(login.clientId,'a'.repeat(64));assert.equal(login.mode,'device');assert.equal('clientSecret' in login,false);
 });

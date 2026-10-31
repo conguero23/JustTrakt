@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "JustTrakt \u00e2\u20ac\u201d Watched on JustWatch",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Your Trakt history, right on JustWatch posters.",
   "permissions": [
     "storage",

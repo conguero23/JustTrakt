@@ -1,25 +1,24 @@
-# JustTrakt 1.3.0 (Beta)
+# JustTrakt 1.3.1 (Beta)
 
-- Hide watched cards, with a floating Show all control to undo the filter.
-- Remove saved titles by clicking their In Trakt watchlist button.
-- Click Trakt percentage ratings to open the matched title on Trakt.
-- Show detail pages display the next episode and remaining aired count.
-- Movies display last-watched dates. Shows display them only when last watched more than one calendar year ago.
-- Optional missing-badge tooltips and expandable matching details on title pages.
-- Daily GitHub update checks, manual checking and popup download notices. Checks can be disabled. No account data is sent to GitHub.
+Fixes the localhost-only restriction when registering a new Trakt Development app.
 
-Download **justtrakt-1.3.0.zip**, extract into your permanent extension folder,
-then click Reload in chrome://extensions and refresh JustWatch. New users:
-enable Developer mode, Load unpacked, and connect Trakt with the public Client ID
-and redirect URL instructions in the popup. The stable extension ID is unchanged
-from 1.2.0. No Client Secret, Node.js or backend is needed to install.
+1. Create a Development app in Trakt with redirect URI **http://localhost**.
+2. Update JustTrakt using **justtrakt-1.3.1.zip**, then Reload in chrome://extensions.
+3. In the popup, leave **Personal / development app (code)** selected and enter your public Client ID.
+4. Click Connect Trakt and enter the displayed code at **https://auth.trakt.tv/activate**.
+5. Approve with the app owner's Trakt account or an invited user, then refresh JustWatch after sync.
 
-Updates are manual. Next-episode data loads on show detail pages and is cached
-for 15 minutes. Hide-watched filters loaded cards, not JustWatch search totals.
-Watched history stays read-only; watchlist writes happen only on your clicks.
-There is no personal-rating feature.
+No localhost server or Client Secret is needed. Device codes are polled through
+auth.trakt.tv with expiry, denial, cancellation and slow-down handling. Existing
+connections and the stable extension ID are unchanged. PKCE remains an optional
+mode for approved production apps; the chromiumapp.org callback does not work
+on Trakt's Development registration form. Production registration is subject to
+Trakt's approval process; this release does not bypass app restrictions.
+
+All v1.3 features remain included: watched filters/dates, next episodes, clickable
+ratings, matching diagnostics, watchlist add/remove and update notices. No personal
+ratings or watched-history write-back.
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. Independent project,
-not affiliated with JustWatch. Read the included privacy policy and third-party
-notices. This remains a beta: automated tests use mocked Trakt responses and DOM
-fixtures; live account behavior and changing JustWatch markup require user testing.
+not affiliated with JustWatch. Automated authentication tests use mocked responses;
+a real-account sign-in is still required to validate your app registration.

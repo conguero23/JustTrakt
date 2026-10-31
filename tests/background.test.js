@@ -35,7 +35,7 @@ test('service worker completes PKCE login and shares single-use refresh across c
   };
   await import(`../background.js?test=${Date.now()}`);
   const invoke=(type,data={})=>new Promise(resolve=>listener({type,...data},{url:'chrome-extension://test/popup.html'},resolve));
-  const login=await invoke('connect',{clientId:'a'.repeat(64)});
+  const login=await invoke('connect',{clientId:'a'.repeat(64),mode:'pkce'});
   assert.equal(login.ok,true);assert.equal(state.username,'test-user');
   assert.equal('clientSecret' in state.credentials,false);assert.ok(state.lastSync);
   state.tokens.created_at=0;
