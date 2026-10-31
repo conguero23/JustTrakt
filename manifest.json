@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "JustTrakt — Watched on JustWatch",
+  "version": "1.2.0",
+  "description": "Your Trakt history, right on JustWatch posters.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://auth.trakt.tv/*",
+    "https://api.trakt.tv/*",
+    "https://*.justwatch.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "JustTrakt",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/trakt.svg"
+      ],
+      "matches": [
+        "https://*.justwatch.com/*"
+      ]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.justwatch.com/*"
+      ],
+      "js": [
+        "inject.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://*.justwatch.com/*"
+      ],
+      "js": [
+        "content.js",
+        "content-features.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwymc3HGuQdbpbmte2vmQssr7b5PIKNKjDIrLBz/S202zUD8i2dsJOmAISHO025R4gYzuojQiPZ6Cs2oY3MMg2eS5g0ngUTFdWUousjGaQgpnYyZfajHCz8g+DvRez/+aBOXbSXsOdY9LofihNP4nK7wGdgZ6Bk3+UISAfZocRPd9g9L3ux9ZAwNx1kreKNMtT3Fz01sXj592OeVjZr3RTQ6OwD8bSky8h/YEyxI5wLmc5+qxRLjFDo96g/As0T2rIyak6oXjBqxDGykdH3KeSfEm6nfe3Dljny0Z18v8Msv7b8BeiID2B2F/xBZsYHRjHBUDMYLVXIrg5aeiPh58EQIDAQAB",
+  "minimum_chrome_version": "120",
+  "icons": {
+    "16": "assets/icon16.png",
+    "32": "assets/icon32.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}

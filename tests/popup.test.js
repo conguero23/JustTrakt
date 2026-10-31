@@ -1,0 +1,24 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {JSDOM} from 'jsdom';
+test('public popup shows callback, public Client ID and privacy disclosure without secret input',async t=>{
+  const dom=new JSDOM(readFileSync(new URL('../popup.html',import.meta.url),'utf8'),{url:'chrome-extension://test/popup.html',runScripts:'outside-only'});
+  t.after(()=>dom.window.close());
+  const calls=[],state={ok:true,connected:false,connecting:false,redirectUri:'https://test.chromiumapp.org/trakt',counts:{movies:0,shows:0},settings:{minProgress:5,completeProgress:90,dimWatched:false,showProgress:true}};
+  dom.window.chrome={runtime:{sendMessage:async message=>{calls.push(message);return state;}}};
+  dom.window.eval(readFileSync(new URL('../popup.js',import.meta.url),'utf8'));
+  await new Promise(resolve=>setTimeout(resolve,20));
+  const d=dom.window.document;
+  assert.equal(d.querySelector('#redirectUri').value,state.redirectUri);
+  assert.equal(d.querySelector('input[type="password"]'),null);
+  assert.equal(d.querySelector('#clientSecret'),null);
+  assert.equal(d.querySelector('#credentials').hidden,false);
+  assert.ok(d.querySelector('a[href="privacy.html"]'));
+  assert.match(d.body.textContent,/not endorsed or certified by Trakt/);
+  d.querySelector('#clientId').value='a'.repeat(64);
+  d.querySelector('#credentials').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));
+  await new Promise(resolve=>setTimeout(resolve,20));
+  const login=calls.find(c=>c.type==='connect');
+  assert.equal(login.clientId,'a'.repeat(64));assert.equal('clientSecret' in login,false);
+});
