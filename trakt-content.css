@@ -65,3 +65,13 @@
 .justtrakt-grid-card .justtrakt-trakt-dock>.justtrakt-trakt-date{border-left-color:#d5ef83}
 .justtrakt-grid-card .justtrakt-trakt-actions [data-action=watchlist]{background:#d5ef83;border-color:#d5ef83;color:#18200c}
 .justtrakt-grid-card .justtrakt-external{color:#d5ef83}
+/* Override native row sizing and virtual-item positioning only while grid mode is on. */
+.justtrakt-poster-grid{position:relative!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;transform:none!important;contain:none!important;box-sizing:border-box!important;grid-auto-flow:row!important;grid-template-rows:none!important;grid-auto-rows:auto!important}
+.justtrakt-poster-grid>.justtrakt-grid-slot{position:relative!important;inset:auto!important;transform:none!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;contain:none!important}
+.justtrakt-grid-wrapper{display:contents!important}
+.justtrakt-grid-card{min-height:0!important;max-height:none!important;min-width:0!important;transform:none!important;inset:auto!important;box-sizing:border-box!important}
+.justtrakt-grid-card:not(.justtrakt-grid-slot){max-width:220px!important}
+.justtrakt-grid-slot .justtrakt-grid-card{max-width:none!important}
+.justtrakt-grid-feedback{color:#bdccdc;font-size:11px;white-space:nowrap}.justtrakt-grid-feedback:empty{display:none}
+.justtrakt-grid-slot{grid-column:auto!important;grid-row:auto!important}
+.justtrakt-grid-card.justtrakt-trakt-filtered{display:none!important}

@@ -10,11 +10,11 @@ Your Trakt history, right on JustWatch. An independent Chrome extension with:
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. It is not affiliated with JustWatch.
 
-[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.7.1) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
+[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.7.2) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
 
 ## Install from a GitHub release
 
-1. Download **justtrakt-1.7.1.zip** from the repository's Releases page.
+1. Download **justtrakt-1.7.2.zip** from the repository's Releases page.
 2. Extract it to a permanent folder. Keep that folder; Chrome loads the files from there.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. In [Trakt Developers](https://developer.trakt.tv/), create a **Development** app with redirect URI **http://localhost**. Trakt may require your verified GitHub account. The form currently limits development apps to localhost callbacks and production registration requires contacting Trakt.
@@ -36,11 +36,11 @@ Sync checks run approximately every 30 minutes; unchanged activity normally need
 
 Ratings load on demand and cache for 24 hours (up to 1,500 titles). Watchlist snapshots cache for five minutes. The extension checks membership before offering Add. Saved items offer removal when clicked, with the action described in the button tooltip and accessible label. Only clicks write to Trakt. Trakt account limits and network errors appear next to the control. Provider offer links keep their normal behavior.
 
-## New in 1.7.1: JustWatchIt poster grid
+## New in 1.7.2: JustWatchIt poster grid
 
 Click **JustWatchIt** beside **Last seen before** in the on-page Trakt movie filter bar to try an experimental JustWatch-style poster grid on Trakt. It applies immediately to supported movie and show card grids, including new cards loaded while browsing. Hover or focus a poster to reveal its native details and movie actions; touch devices keep details visible. Click again to restore Trakt's layout. The toggle is off by default, needs no account or new permissions, and does not change your watch history.
 
-On show-only grids the button appears in a compact page toolbar. The button is not inside a movie card or the popup. This uses Trakt's existing posters and controls. It leaves positioned virtual lists and incompatible section layouts untouched; live layouts may vary. Last-seen dates remain movie-only.
+On show-only grids the button appears in a compact page toolbar. The button is not inside a movie card or the popup. This uses Trakt's existing posters and controls. It handles deep card wrappers, direct page children and positioned slots, restoring their original sizing and positioning when disabled. The button reports the number of posters, or reports that none were found. Separate sections and sidebars remain separate; live layouts may vary. Last-seen dates remain movie-only.
 
 ## Added in 1.6.2: Movie-only last-seen dates
 

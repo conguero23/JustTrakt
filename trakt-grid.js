@@ -1,15 +1,15 @@
 (() => {
   let enabled=false,timer,pending=false;
   const marked=new Set();
-  const classes=['justtrakt-poster-grid','justtrakt-grid-slot','justtrakt-grid-card'];
+  const classes=['justtrakt-poster-grid','justtrakt-grid-slot','justtrakt-grid-card','justtrakt-grid-wrapper'];
   function clear(){for(const node of marked)node.classList.remove(...classes);marked.clear();}
   function mark(node,name){node.classList.add(name);marked.add(node);}
   function mediaCard(card){
     return [...card.querySelectorAll('a[href]')].some(link=>{
-      try{const url=new URL(link.href,location.href);return url.origin===location.origin&&/^\/(movies|shows)\/[a-z0-9][a-z0-9-]*\/?$/.test(url.pathname);}catch{return false;}
+      try{const url=new URL(link.href,location.href);return [location.hostname,'app.trakt.tv','trakt.tv'].includes(url.hostname)&&/^\/(movies|shows)\/[a-z0-9][a-z0-9-]*\/?$/.test(url.pathname);}catch{return false;}
     })&&!!card.querySelector('.trakt-card-cover img,.trakt-summary-poster img');
   }
-  function controls(hasCards){
+  function controls(hasCards,count=0){
     let button=document.querySelector('.justtrakt-grid-toggle');
     const filters=document.querySelector('.justtrakt-trakt-filterbar');
     let toolbar=document.querySelector('.justtrakt-grid-toolbar');
@@ -33,24 +33,45 @@
       if(button.parentElement!==toolbar)toolbar.append(button);
     }
     button.setAttribute('aria-pressed',String(enabled));
+    let status=button.parentElement.querySelector('.justtrakt-grid-feedback');
+    if(!status){status=document.createElement('span');status.className='justtrakt-grid-feedback';status.setAttribute('role','status');button.after(status);}
+    const text=enabled?(count?`${count} posters`:'No supported posters found on this page.'):'';
+    if(status.textContent!==text)status.textContent=text;
+    button.dataset.posters=String(enabled?count:0);
   }
   function scan(){
     timer=null;clear();
-    const cards=[...document.querySelectorAll('main .trakt-card')].filter(mediaCard);
-    controls(cards.length>0);if(!enabled)return;
+    const root=document.querySelector('main,[role=main]')||document.body;
+    const cards=[...root.querySelectorAll('.trakt-card')].filter(card=>!card.closest('aside')&&mediaCard(card));
+    controls(cards.length>0||!!document.querySelector('.justtrakt-trakt-filterbar'),enabled?cards.length:0);if(!enabled)return;
     const candidates=new Set(cards);
+    const grouped=new Set();
+    const branches=new Map();
+    // Cache every card's ancestry instead of assuming a fixed number of wrappers.
     for(const card of cards){
-      if(marked.has(card))continue;
-      let slot=card,parent=slot.parentElement;
-      for(let depth=0;parent&&parent.tagName!=='MAIN'&&depth<4;depth++,slot=parent,parent=parent.parentElement){
-        const slots=[...parent.children].filter(child=>candidates.has(child)||[...child.querySelectorAll('.trakt-card')].some(c=>candidates.has(c)));
-        if(slots.length<2)continue;
-        // Only flatten one-card slots: never turn whole sections or carousels into posters.
-        if(slots.some(child=>[child,...child.querySelectorAll('.trakt-card')].filter(c=>candidates.has(c)).length!==1))break;
-        if(slots.some(child=>child.style.transform||child.style.position==='absolute'))break;
-        mark(parent,'justtrakt-poster-grid');
-        for(const child of slots){mark(child,'justtrakt-grid-slot');const media=candidates.has(child)?child:child.querySelector('.trakt-card');mark(media,'justtrakt-grid-card');}
-        break;
+      mark(card,'justtrakt-grid-card');
+      for(let child=card,parent=child.parentElement;parent&&root.contains(parent);child=parent,parent=parent.parentElement){
+        if(!branches.has(parent))branches.set(parent,new Set());branches.get(parent).add(child);
+        if(parent===root||parent.matches('section,aside'))break;
+      }
+    }
+    for(const card of cards){
+      if(grouped.has(card))continue;
+      for(let parent=card.parentElement;parent&&root.contains(parent);parent=parent.parentElement){
+        const slots=[...(branches.get(parent)||[])];
+        if(slots.length>=2){
+          mark(parent,'justtrakt-poster-grid');
+          for(const slot of slots){
+            mark(slot,'justtrakt-grid-slot');
+            for(const media of candidates.has(slot)?[slot]:slot.querySelectorAll('.trakt-card')){
+              if(!candidates.has(media))continue;
+              grouped.add(media);
+              for(let wrapper=media.parentElement;wrapper&&wrapper!==parent&&wrapper!==slot;wrapper=wrapper.parentElement)mark(wrapper,'justtrakt-grid-wrapper');
+            }
+          }
+          break;
+        }
+        if(parent===root||parent.matches('section,aside'))break;
       }
     }
   }

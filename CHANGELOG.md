@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.2 - 2026-10-31
+
+- Fix JustWatchIt turning on without applying poster styles to nested or positioned cards.
+- Remove the four-wrapper detection limit and support direct main children, deep wrappers and positioned slots.
+- Reset native fixed row sizing in grid mode and restore it on disable.
+- Report poster counts beside the toggle and retain movie filtering in grid mode.
+
 ## 1.7.1 - 2026-10-31
 
 - Move JustWatchIt into the on-page filter bar beside Last seen before; remove the popup button.

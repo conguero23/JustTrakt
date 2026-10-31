@@ -17,10 +17,10 @@ test('JustWatchIt handles movies, shows, infinite scroll and settings without re
   change({settings:{newValue:{traktPosterGrid:false}}},'local');await wait();assert.equal(d.querySelector('.justtrakt-grid-card,.justtrakt-grid-slot'),null);assert.equal(d.querySelector('.justtrakt-poster-grid'),null);assert.ok(d.querySelector('.original-slot'));assert.equal(d.querySelector('.trakt-card button'),button);
 });
 
-test('JustWatchIt leaves positioned virtual lists and section wrappers alone',async t=>{
+test('JustWatchIt converts positioned slots without combining separate sections',async t=>{
   const dom=new JSDOM(`<main><div id="virtual"><div style="position:absolute">${card('movies','one')}</div><div style="transform:translateY(20px)">${card('shows','two')}</div></div><div id="sections"><section>${card('movies','three')}${card('shows','four')}</section><section>${card('movies','five')}</section></div></main>`,{url:'https://app.trakt.tv/discover',runScripts:'outside-only'});t.after(()=>dom.window.close());
   dom.window.chrome={storage:{local:{get:async()=>({settings:{traktPosterGrid:true}})},onChanged:{addListener:()=>{}}}};dom.window.eval(source);await wait();
-  assert.equal(dom.window.document.querySelector('#virtual.justtrakt-poster-grid'),null);assert.equal(dom.window.document.querySelector('#sections.justtrakt-poster-grid'),null);
+  assert.ok(dom.window.document.querySelector('#virtual.justtrakt-poster-grid'));assert.equal(dom.window.document.querySelector('#virtual .justtrakt-grid-slot').style.position,'absolute');assert.equal(dom.window.document.querySelector('#sections.justtrakt-poster-grid'),null);
 });
 
 test('page toggle sits beside Last seen before, persists on click and restores the layout',async t=>{
@@ -31,6 +31,17 @@ test('page toggle sits beside Last seen before, persists on click and restores t
   assert.equal(d.querySelector('[data-filter=seenBefore]').parentElement.nextElementSibling,button);assert.equal(button.textContent,'JustWatchIt');
   button.click();button.click();assert.equal(calls.length,1);assert.equal(calls[0].type,'traktGrid');assert.equal(calls[0].enabled,true);assert.equal(button.disabled,true);
   finish({ok:true,enabled:true});await wait();assert.ok(d.querySelector('.justtrakt-poster-grid'));assert.equal(button.getAttribute('aria-pressed'),'true');
+  assert.equal(d.querySelector('.justtrakt-grid-feedback').textContent,'2 posters');
   button.click();finish({ok:true,enabled:false});await wait();assert.equal(d.querySelector('.justtrakt-poster-grid'),null);assert.equal(button.getAttribute('aria-pressed'),'false');
   d.querySelector('.justtrakt-trakt-filterbar').remove();await wait();assert.ok(d.querySelector('.justtrakt-grid-toolbar .justtrakt-grid-toggle'));
+});
+
+test('deep wrappers and direct main children get poster layout and restore all native inline positioning',async t=>{
+  const nested=html=>'<div>'.repeat(7)+html+'</div>'.repeat(7);
+  const dom=new JSDOM(`<main><div id="deep"><div style="position:absolute;transform:translateY(300px)">${nested(card('movies','one'))}</div><div>${nested(card('shows','two'))}</div></div></main>`,{url:'https://app.trakt.tv/discover',runScripts:'outside-only'});t.after(()=>dom.window.close());
+  let change;dom.window.chrome={storage:{local:{get:async()=>({settings:{traktPosterGrid:true}})},onChanged:{addListener:fn=>change=fn}}};dom.window.eval(source);await wait();
+  const d=dom.window.document;assert.ok(d.querySelector('#deep.justtrakt-poster-grid'));assert.equal(d.querySelectorAll('.justtrakt-grid-card').length,2);assert.ok(d.querySelectorAll('.justtrakt-grid-wrapper').length>=14);
+  change({settings:{newValue:{traktPosterGrid:false}}},'local');await wait();assert.equal(d.querySelector('.justtrakt-grid-wrapper,.justtrakt-grid-slot'),null);assert.equal(d.querySelector('#deep>div').style.transform,'translateY(300px)');
+  d.querySelector('#deep').remove();d.querySelector('main').insertAdjacentHTML('beforeend',card('movies','three')+card('shows','four'));
+  change({settings:{newValue:{traktPosterGrid:true}}},'local');await wait();assert.ok(d.querySelector('main.justtrakt-poster-grid'));
 });
