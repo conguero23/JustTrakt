@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2 — 2026-10-31
+
+- Match Trakt's charcoal/white/orange UI across card tools and browsing filters.
+- Make Last seen prominent with a labelled, localized date and a restrained orange marker.
+- Remove Note actions from movie cards and information panels; keep existing local notes untouched.
+- Use a single full-width JustWatch action with a small orange external-link indicator.
+
 ## 1.5.1 — 2026-10-31
 
 - Move last-seen dates, counts and actions off summary-card posters into the right-hand details column.

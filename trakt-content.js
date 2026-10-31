@@ -57,13 +57,14 @@
     const title=movie?.title || candidate.title || candidate.slug.replace(/-\d{4}$/,'').replace(/-/g,' ');
     const docked=host.classList.contains('justtrakt-trakt-dock');
     const signature=JSON.stringify([candidate.slug,movie,preferences.traktWatchCounts,preferences.traktRewatch,title,docked]);
-    if(panel?.dataset.signature===signature&&panel.querySelector('[data-action="jw"]')&&panel.querySelector('[data-action="note"]'))return;
+    if(panel?.dataset.signature===signature&&panel.querySelector('[data-action="jw"]')&&!panel.querySelector('[data-action="note"]'))return;
     panel?.remove();panel=document.createElement('div');panel.className=`justtrakt-trakt-tools${candidate.info?' justtrakt-trakt-detail-tools':''}`;panel.dataset.signature=signature;
     if(!candidate.info&&!docked&&!host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
     if(movie?.plays>0 && preferences.traktWatchCounts!==false){const count=document.createElement('span');count.className='justtrakt-trakt-count';count.textContent=`Seen ${movie.plays} time${movie.plays===1?'':'s'}`;panel.append(count);}
     if(movie?.rewatch && preferences.traktRewatch!==false){const flag=document.createElement('span');flag.className='justtrakt-trakt-rewatch';flag.textContent=docked?'3+ yr rewatch':'Rewatch · 3+ years';flag.title='Last watched more than three calendar years ago.';panel.append(flag);}
     const actions=document.createElement('div');actions.className='justtrakt-trakt-actions';
-    for(const [action,label] of [['jw',docked?'JustWatch ↗':'Find on JustWatch'],['note',docked?'Note +':'Private note']]){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.slug=candidate.slug;button.dataset.title=title;button.textContent=label;button.setAttribute('aria-label',action==='jw'?'Find streaming options on JustWatch':'Open private movie note');button.title=action==='jw'?'Find streaming options on JustWatch':'Open private movie note';actions.append(button);}
+    const button=document.createElement('button');button.type='button';button.dataset.action='jw';button.dataset.slug=candidate.slug;button.dataset.title=title;button.textContent=docked?'JustWatch':'Find on JustWatch';button.setAttribute('aria-label','Find streaming options on JustWatch');button.title='Find streaming options on JustWatch';
+    const arrow=document.createElement('span');arrow.className='justtrakt-external';arrow.setAttribute('aria-hidden','true');arrow.textContent='↗';button.append(arrow);actions.append(button);
     panel.append(actions);host.append(panel);
   }
   document.addEventListener('click',async event=>{
@@ -79,8 +80,13 @@
     if(!result){node?.remove();return;}
     if(!node){node=document.createElement(info?'p':'span');node.className=selector.slice(1);host.append(node);}
     if(!info && !host.classList.contains('justtrakt-trakt-dock') && !host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
-    const text=`Last seen ${result.date}`;
-    if(node.textContent!==text)node.textContent=text;
+    if(info || host.classList.contains('justtrakt-trakt-dock')){
+      if(node.dataset.date!==result.date || !node.querySelector('time')){
+        const label=document.createElement('span');label.className='justtrakt-date-label';label.textContent='Last seen';
+        const date=document.createElement('time');date.dateTime=result.date;date.textContent=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(`${result.date}T00:00:00Z`));
+        node.replaceChildren(label,date);node.dataset.date=result.date;
+      }
+    }else{const text=`Last seen ${result.date}`;if(node.textContent!==text)node.textContent=text;}
     node.title=`JustTrakt${result.username?` · @${result.username}`:''} · Last watched ${result.date}. From the account connected to this extension.`;
   }
   async function scan(){

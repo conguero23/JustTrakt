@@ -34,7 +34,7 @@ test('last-seen lookup requires exact cached slug/ID, watched plays, and a valid
   assert.equal(movieDates({...state,settings:{traktLastSeen:false}},['inception-2010'])[0],null);
 });
 
-test('Trakt filters hide watched cards, reset safely, and actions open JustWatch and private note editor',async t=>{
+test('Trakt filters hide watched cards, reset safely, and expose only the JustWatch action',async t=>{
   const {dom,doc,calls}=page('https://app.trakt.tv/discover/trending?mode=movie','<main><a href="/movies/inception-2010"><div class="trakt-card-cover"><img alt="Inception"></div></a><a href="/movies/unknown"><img alt="Unknown"></a></main>');t.after(()=>dom.window.close());
   let config={hideWatched:false,seenBefore:'',minPlays:0,maxPlays:null};
   dom.window.chrome.runtime.sendMessage=async message=>{
@@ -48,15 +48,16 @@ test('Trakt filters hide watched cards, reset safely, and actions open JustWatch
   assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,1);
   doc.querySelector('.justtrakt-trakt-filterbar > button').click();await wait();assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,0);
   doc.querySelector('[data-action="jw"]').click();await wait();assert.equal(calls.find(c=>c.type==='openJustWatch').title,'Inception');
-  doc.querySelector('[data-action="note"]').click();await wait();assert.equal(calls.find(c=>c.type==='openNotes').slug,'inception-2010');
+  assert.equal(doc.querySelector('[data-action="note"]'),null);assert.equal(calls.find(c=>c.type==='openNotes'),undefined);
 });
 
 test('summary cards dock dates and actions in the right details panel without covering poster or native rating',async t=>{
   const {dom,doc}=page('https://app.trakt.tv/discover/trending?mode=movie','<main><div class="trakt-card trakt-summary-card"><div class="trakt-card-content"><a href="/movies/inception-2010"><div class="trakt-summary-poster"><div class="trakt-card-cover"><img alt="Inception"></div></div><div class="trakt-summary-card-details"><div class="trakt-summary-card-titles"><h3>Inception</h3></div><div class="trakt-summary-card-tags">2010 · 148m</div></div></a><div class="trakt-summary-card-bottom-bar">82%</div></div></div></main>');t.after(()=>dom.window.close());await wait();
   const poster=doc.querySelector('.trakt-card-cover'),details=doc.querySelector('.trakt-summary-card-details'),dock=details.querySelector('.justtrakt-trakt-dock');
   assert.equal(poster.querySelector('.justtrakt-trakt-date,.justtrakt-trakt-tools'),null);
-  assert.equal(dock.querySelector('.justtrakt-trakt-date').textContent,'Last seen 2025-03-15');
-  assert.equal(dock.querySelectorAll('button').length,2);
+  assert.equal(dock.querySelector('.justtrakt-date-label').textContent,'Last seen');
+  assert.equal(dock.querySelector('time').dateTime,'2025-03-15');
+  assert.equal(dock.querySelectorAll('button').length,1);assert.equal(dock.querySelector('[data-action="note"]'),null);
   assert.equal(details.children[0].className,'trakt-summary-card-titles');assert.equal(details.children[1],dock);assert.equal(details.children[2].className,'trakt-summary-card-tags');
   assert.equal(doc.querySelector('.trakt-summary-card-bottom-bar').textContent,'82%');
   dock.remove();await wait();assert.equal(details.querySelectorAll('.justtrakt-trakt-dock').length,1);assert.equal(poster.querySelector('.justtrakt-trakt-tools'),null);

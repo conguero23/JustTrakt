@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "JustTrakt - Watched on JustWatch",
-  "version": "1.5.1",
-  "description": "Trakt history on JustWatch, plus movie dates, counts, rewatch reminders, filters and private local notes on Trakt.",
+  "version": "1.5.2",
+  "description": "Trakt history on JustWatch, plus movie dates, counts, rewatch reminders and filters on Trakt.",
   "permissions": [
     "storage",
     "alarms",
