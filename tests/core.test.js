@@ -31,12 +31,13 @@ test('matching requires year and type, isolates TMDB namespaces, refuses collisi
   assert.equal(match(collision,{title:'Example',year:2020,type:'movie'}),null);
 });
 test('invalid settings rejected', () => { assert.throws(()=>settings({minProgress:90,completeProgress:5})); assert.throws(()=>settings({minProgress:NaN})); });
-test('movie dates always display; shows require strictly more than one calendar year',()=>{
+test('last-watched dates are movie-only, including shows last watched over a year ago',()=>{
   const now=Date.parse('2026-10-31T12:00:00Z');
   assert.equal(watchedDate({id:'movie:1',lastWatchedAt:'2026-10-30T12:00:00Z'},now),'Last watched 2026-10-30');
   assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2026-01-01T12:00:00Z'},now),null);
   assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2025-10-31T12:00:00Z'},now),null);
-  assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2025-10-31T11:59:59Z'},now),'Last watched 2025-10-31');
+  assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2025-10-31T11:59:59Z'},now),null);
+  assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2020-01-01'},now),null);
   assert.equal(watchedDate({id:'movie:1',lastWatchedAt:'invalid'},now),null);
   assert.equal(watchedDate({id:'movie:1',lastWatchedAt:'2030-01-01'},now),null);
 });

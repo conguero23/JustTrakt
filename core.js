@@ -34,11 +34,9 @@ export function buildIndex(cache = {}, options = defaults, previous = {}) {
   return { index, baselines };
 }
 export function watchedDate(status, now = Date.now()) {
+  if (!status?.id?.startsWith('movie:')) return null;
   const date = new Date(status?.lastWatchedAt);
   if (!Number.isFinite(date.getTime()) || date.getTime() > now) return null;
-  const cutoff = new Date(now), month=cutoff.getUTCMonth();cutoff.setUTCFullYear(cutoff.getUTCFullYear()-1);
-  if(cutoff.getUTCMonth()!==month)cutoff.setUTCDate(0);
-  if (status.id?.startsWith('show:') && date.getTime() >= cutoff.getTime()) return null;
   return `Last watched ${date.toISOString().slice(0,10)}`;
 }
 export function movieDates(state, slugs, now=Date.now()) {

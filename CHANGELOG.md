@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.2 - 2026-10-31
+
+- Show last-seen dates only for movies, on both posters and detail pages. Show progress and watched badges remain available.
+
 ## 1.6.1 - 2026-10-31
 
 - Put watch counts beside Last seen as (2) on Trakt movie cards and detail pages, removing the separate count row.

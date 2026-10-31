@@ -10,11 +10,11 @@ Your Trakt history, right on JustWatch. An independent Chrome extension with:
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. It is not affiliated with JustWatch.
 
-[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.6.1) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
+[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.6.2) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
 
 ## Install from a GitHub release
 
-1. Download **justtrakt-1.6.1.zip** from the repository's Releases page.
+1. Download **justtrakt-1.6.2.zip** from the repository's Releases page.
 2. Extract it to a permanent folder. Keep that folder; Chrome loads the files from there.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. In [Trakt Developers](https://developer.trakt.tv/), create a **Development** app with redirect URI **http://localhost**. Trakt may require your verified GitHub account. The form currently limits development apps to localhost callbacks and production registration requires contacting Trakt.
@@ -36,7 +36,11 @@ Sync checks run approximately every 30 minutes; unchanged activity normally need
 
 Ratings load on demand and cache for 24 hours (up to 1,500 titles). Watchlist snapshots cache for five minutes. The extension checks membership before offering Add. Saved items offer removal when clicked, with the action described in the button tooltip and accessible label. Only clicks write to Trakt. Trakt account limits and network errors appear next to the control. Provider offer links keep their normal behavior.
 
-## New in 1.6.1: Compact watch counts
+## New in 1.6.2: Movie-only last-seen dates
+
+Last-seen dates appear only for movies. Show badges retain watched status and episode progress.
+
+## Added in 1.6.1: Compact watch counts
 
 Movie cards and detail pages show **Last seen (2)** with the watch count beside the label, saving a separate row.
 
@@ -79,7 +83,7 @@ Trakt's live automated browser view returned a 403 response. Card/detail selecto
 - Click an **In Trakt watchlist** button to remove the item; the tooltip and accessible label describe removal. New items still offer Add. History stays read-only.
 - Click a Trakt percentage rating to open the exact title on Trakt.
 - Show detail pages display the next regular-season episode and remaining aired count. Progress loads only on detail pages, caches for 15 minutes, and refreshes after a full history sync.
-- Movies show a valid last-watched date on posters and detail pages. Shows show it only when the most recent watch is strictly more than one calendar year ago. Unknown, invalid and future dates stay hidden.
+- Only movies show a last-watched date on posters and detail pages. Shows keep episode progress and watched status without a last-seen date. Unknown, invalid and future dates stay hidden.
 - **Explain missing poster badges** adds a question-mark tooltip. Expand **Trakt matching details** on a title page for verified matching/history information; uncertain matches are never described as watched.
 - **Check GitHub for updates** checks public releases at most daily while the popup is open. An update banner links to the download page. A manual check and off switch are available; no account data is sent and nothing installs automatically. Beta releases are included.
 

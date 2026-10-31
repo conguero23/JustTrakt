@@ -23,7 +23,7 @@ test('watchlist removal uses the correct endpoint and updates membership without
 test('next-episode progress loads on demand, is cached, and invalidates after history refresh',async()=>{
   const {state,calls,features,item}=setup();
   const a=await features.info(item);assert.equal(a.progress.remaining,3);assert.equal(a.progress.next.season,2);assert.equal(a.progress.next.number,4);
-  assert.equal(a.lastWatched,'Last watched 2020-01-01');
+  assert.equal(a.lastWatched,null);
   assert.equal(a.traktUrl,'https://trakt.tv/shows/12');
   await features.info(item);assert.equal(calls.filter(c=>c.path.includes('/progress/watched')).length,1);
   state.lastFullSync=124;await features.info(item);assert.equal(calls.filter(c=>c.path.includes('/progress/watched')).length,2);
