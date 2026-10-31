@@ -10,11 +10,11 @@ Your Trakt history, right on JustWatch. An independent Chrome extension with:
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. It is not affiliated with JustWatch.
 
-[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.6.0) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
+[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.6.1) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
 
 ## Install from a GitHub release
 
-1. Download **justtrakt-1.6.0.zip** from the repository's Releases page.
+1. Download **justtrakt-1.6.1.zip** from the repository's Releases page.
 2. Extract it to a permanent folder. Keep that folder; Chrome loads the files from there.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. In [Trakt Developers](https://developer.trakt.tv/), create a **Development** app with redirect URI **http://localhost**. Trakt may require your verified GitHub account. The form currently limits development apps to localhost callbacks and production registration requires contacting Trakt.
@@ -36,7 +36,11 @@ Sync checks run approximately every 30 minutes; unchanged activity normally need
 
 Ratings load on demand and cache for 24 hours (up to 1,500 titles). Watchlist snapshots cache for five minutes. The extension checks membership before offering Add. Saved items offer removal when clicked, with the action described in the button tooltip and accessible label. Only clicks write to Trakt. Trakt account limits and network errors appear next to the control. Provider offer links keep their normal behavior.
 
-## New in 1.6.0: Watchlist on Trakt
+## New in 1.6.1: Compact watch counts
+
+Movie cards and detail pages show **Last seen (2)** with the watch count beside the label, saving a separate row.
+
+## Added in 1.6.0: Watchlist on Trakt
 
 Movie cards and detail pages now have a **Watchlist +** button beside JustWatch.
 The extension checks membership first and displays **Saved** for items already
@@ -57,7 +61,7 @@ On Trakt summary cards, dates, watch counts and actions are placed in the right-
 ## Added in 1.5.0: Trakt movie tools
 
 - A **JustTrakt movie filters** bar on pages with movie cards: unwatched only (hide watched), last-seen-before date, and minimum/maximum watch count. **Show all / Reset** restores all loaded cards. Filters persist locally, affect loaded cards only, and leave detail pages accessible. Unknown history stays visible until you connect and sync.
-- **Seen N times** labels and a rewatch reminder only when the last watch is strictly more than **three calendar years** ago. Unknown dates and unwatched movies do not receive reminders. Toggle counts and reminders independently under On Trakt in the popup.
+- Compact watch counts beside Last seen, such as **Last seen (2)**, and a rewatch reminder only when the last watch is strictly more than **three calendar years** ago. Unknown dates and unwatched movies do not receive reminders. Toggle counts and reminders independently under On Trakt in the popup.
 - **Find on JustWatch** actions on movie cards and detail pages. They open a title search in the chosen country, not a guaranteed exact match or a verified provider listing. Set the two-letter country code (such as us, gb or bo) in the popup.
 - **Private note** opens an extension-owned editor, keeping note text out of Trakt's webpage. Save/delete locally with a 4,000-character limit per movie, up to 1,000 movies, subject to Chrome storage quota. Notes are never sent to a service. Notes have no server backup and Disconnect/uninstall clears them. Concurrent changes from another editor are detected before overwrite.
 

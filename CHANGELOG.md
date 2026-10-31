@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.1 - 2026-10-31
+
+- Put watch counts beside Last seen as (2) on Trakt movie cards and detail pages, removing the separate count row.
+- Keep counts in sync when history or display settings change.
+
 ## 1.6.0 — 2026-10-31
 
 - Add Watchlist + / Saved controls to Trakt movie cards and movie detail pages.

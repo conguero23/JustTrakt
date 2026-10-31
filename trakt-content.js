@@ -80,11 +80,12 @@
     let panel=host.querySelector(':scope > .justtrakt-trakt-tools');
     const title=movie?.title || candidate.title || candidate.slug.replace(/-\d{4}$/,'').replace(/-/g,' ');
     const docked=host.classList.contains('justtrakt-trakt-dock');
-    const signature=JSON.stringify([candidate.slug,movie,preferences.traktWatchCounts,preferences.traktRewatch,title,docked]);
+    const dateVisible=!!host.querySelector(':scope > .justtrakt-trakt-date,:scope > .justtrakt-trakt-info');
+    const signature=JSON.stringify([candidate.slug,movie,preferences.traktWatchCounts,preferences.traktRewatch,title,docked,dateVisible]);
     if(panel?.dataset.signature===signature&&panel.querySelector('[data-action="jw"]')&&panel.querySelector('[data-action="watchlist"]')&&!panel.querySelector('[data-action="note"]')){loadWatchlist(panel.querySelector('[data-action="watchlist"]'),candidate.slug);return;}
     panel?.remove();panel=document.createElement('div');panel.className=`justtrakt-trakt-tools${candidate.info?' justtrakt-trakt-detail-tools':''}`;panel.dataset.signature=signature;
     if(!candidate.info&&!docked&&!host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
-    if(movie?.plays>0 && preferences.traktWatchCounts!==false){const count=document.createElement('span');count.className='justtrakt-trakt-count';count.textContent=`Seen ${movie.plays} time${movie.plays===1?'':'s'}`;panel.append(count);}
+    if(!dateVisible && movie?.plays>0 && preferences.traktWatchCounts!==false){const count=document.createElement('span');count.className='justtrakt-trakt-count';count.textContent=`(${movie.plays})`;count.title=`Watched ${movie.plays} time${movie.plays===1?'':'s'}`;count.setAttribute('aria-label',count.title);panel.append(count);}
     if(movie?.rewatch && preferences.traktRewatch!==false){const flag=document.createElement('span');flag.className='justtrakt-trakt-rewatch';flag.textContent=docked?'3+ yr rewatch':'Rewatch · 3+ years';flag.title='Last watched more than three calendar years ago.';panel.append(flag);}
     const actions=document.createElement('div');actions.className='justtrakt-trakt-actions';
     const watchlist=document.createElement('button');watchlist.type='button';watchlist.dataset.action='watchlist';watchlist.dataset.slug=candidate.slug;watchlist.textContent='Checking…';actions.append(watchlist);
@@ -101,19 +102,20 @@
     catch(error){let status=button.parentElement.querySelector('.justtrakt-trakt-action-status');if(!status){status=document.createElement('span');status.className='justtrakt-trakt-action-status';status.setAttribute('role','status');button.parentElement.append(status);}status.textContent=error.message;}
     finally{button.disabled=false;}
   },true);
-  function render(host,result,info=false){
+  function render(host,result,info=false,movie=null,preferences={}){
     const selector=info?'.justtrakt-trakt-info':'.justtrakt-trakt-date';
     let node=host.querySelector(`:scope > ${selector}`);
     if(!result){node?.remove();return;}
     if(!node){node=document.createElement(info?'p':'span');node.className=selector.slice(1);host.append(node);}
     if(!info && !host.classList.contains('justtrakt-trakt-dock') && !host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
+    const count=movie?.plays>0 && preferences.traktWatchCounts!==false?` (${movie.plays})`:'';
     if(info || host.classList.contains('justtrakt-trakt-dock')){
-      if(node.dataset.date!==result.date || !node.querySelector('time')){
-        const label=document.createElement('span');label.className='justtrakt-date-label';label.textContent='Last seen';
+      if(node.dataset.date!==result.date || node.dataset.count!==count || !node.querySelector('time')){
+        const label=document.createElement('span');label.className='justtrakt-date-label';label.textContent=`Last seen${count}`;
         const date=document.createElement('time');date.dateTime=result.date;date.textContent=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(`${result.date}T00:00:00Z`));
-        node.replaceChildren(label,date);node.dataset.date=result.date;
+        node.replaceChildren(label,date);node.dataset.date=result.date;node.dataset.count=count;
       }
-    }else{const text=`Last seen ${result.date}`;if(node.textContent!==text)node.textContent=text;}
+    }else{const text=`Last seen${count} ${result.date}`;if(node.textContent!==text)node.textContent=text;}
     node.title=`JustTrakt${result.username?` · @${result.username}`:''} · Last watched ${result.date}. From the account connected to this extension.`;
   }
   async function scan(){
@@ -147,8 +149,8 @@
           if(!candidate.host.isConnected)return;
           if(candidate.detail&&slugOf(location.href)!==candidate.slug){schedule();return;}
           if(!candidate.detail){const link=candidate.host.closest('a[href]');if(link&&slugOf(link.href)!==candidate.slug){schedule();return;}}
-          render(candidate.host,response.dates[i],candidate.info);
           const movie=response.movies?.[i] || (response.dates[i]?{...response.dates[i],plays:1,watched:true}:null);
+          render(candidate.host,response.dates[i],candidate.info,movie,response.settings);
           if(!candidate.detail||candidate.info)extra(candidate.host,movie,candidate,response.settings);
           else candidate.host.querySelector(':scope > .justtrakt-trakt-tools')?.remove();
           if(!candidate.detail){const card=candidate.host.closest('.trakt-card') || candidate.host.closest('.trakt-card-content') || candidate.host.closest('a') || candidate.host;const hide=isFiltered(movie);card.classList.toggle('justtrakt-trakt-filtered',!!hide);loaded++;if(hide)hidden++;if(!movie||movie.watched===null)unknown++;}

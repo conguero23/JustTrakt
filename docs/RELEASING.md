@@ -54,14 +54,14 @@ git push -u origin main
 
 Sign in to GitHub when prompted. `.gitignore` excludes node_modules, generated ZIPs, browser diagnostics and local secrets. GitHub Actions runs tests and creates downloadable artifacts automatically after pushing. The upload does not publish a GitHub Release by itself.
 
-No Git? Extract `dist/justtrakt-1.6.0-source.zip`, then upload its contents through **Add file → Upload files**. Ensure the `.github` directory is included if you want CI.
+No Git? Extract `dist/justtrakt-1.6.1-source.zip`, then upload its contents through **Add file → Upload files**. Ensure the `.github` directory is included if you want CI.
 
 ## Create the downloadable release
 
 1. In your repository, choose **Releases → Draft a new release**.
-2. Create tag `v1.6.0`, target `main`, title `JustTrakt 1.5.0`.
+2. Create tag `v1.6.1`, target `main`, title `JustTrakt 1.6.1`.
 3. Paste RELEASE_NOTES.md into the description.
-4. Attach `dist/justtrakt-1.6.0.zip` and `dist/SHA256SUMS.txt`. Optionally also attach the source ZIP (its hash is included).
+4. Attach `dist/justtrakt-1.6.1.zip` and `dist/SHA256SUMS.txt`. Optionally also attach the source ZIP (its hash is included).
 5. Mark it as a pre-release until live checks pass. Review the description, files and legal/branding notes, then publish when ready.
 6. In repository settings, enable **Issues** and **Security → Private vulnerability reporting**. Use the Privacy and Security documents as the support policy; avoid asking users for storage exports.
 
