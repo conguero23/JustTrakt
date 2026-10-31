@@ -50,3 +50,14 @@ test('Trakt filters hide watched cards, reset safely, and actions open JustWatch
   doc.querySelector('[data-action="jw"]').click();await wait();assert.equal(calls.find(c=>c.type==='openJustWatch').title,'Inception');
   doc.querySelector('[data-action="note"]').click();await wait();assert.equal(calls.find(c=>c.type==='openNotes').slug,'inception-2010');
 });
+
+test('summary cards dock dates and actions in the right details panel without covering poster or native rating',async t=>{
+  const {dom,doc}=page('https://app.trakt.tv/discover/trending?mode=movie','<main><div class="trakt-card trakt-summary-card"><div class="trakt-card-content"><a href="/movies/inception-2010"><div class="trakt-summary-poster"><div class="trakt-card-cover"><img alt="Inception"></div></div><div class="trakt-summary-card-details"><div class="trakt-summary-card-titles"><h3>Inception</h3></div><div class="trakt-summary-card-tags">2010 · 148m</div></div></a><div class="trakt-summary-card-bottom-bar">82%</div></div></div></main>');t.after(()=>dom.window.close());await wait();
+  const poster=doc.querySelector('.trakt-card-cover'),details=doc.querySelector('.trakt-summary-card-details'),dock=details.querySelector('.justtrakt-trakt-dock');
+  assert.equal(poster.querySelector('.justtrakt-trakt-date,.justtrakt-trakt-tools'),null);
+  assert.equal(dock.querySelector('.justtrakt-trakt-date').textContent,'Last seen 2025-03-15');
+  assert.equal(dock.querySelectorAll('button').length,2);
+  assert.equal(details.children[0].className,'trakt-summary-card-titles');assert.equal(details.children[1],dock);assert.equal(details.children[2].className,'trakt-summary-card-tags');
+  assert.equal(doc.querySelector('.trakt-summary-card-bottom-bar').textContent,'82%');
+  dock.remove();await wait();assert.equal(details.querySelectorAll('.justtrakt-trakt-dock').length,1);assert.equal(poster.querySelector('.justtrakt-trakt-tools'),null);
+});

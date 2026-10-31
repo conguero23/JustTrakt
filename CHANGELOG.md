@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1 — 2026-10-31
+
+- Move last-seen dates, counts and actions off summary-card posters into the right-hand details column.
+- Compact, aligned JustWatch/Note buttons and quieter typography, preserving native metadata and bottom ratings.
+- Avoid duplicate tools on detail-page posters and prevent recommendations from inheriting the current movie's date.
+- Add a summary-card placement/restoration regression test and visually inspect a compact-card preview.
+
 ## 1.5.0 — 2026-10-31
 
 - Trakt movie filters: unwatched only/hide watched, last-seen-before date and minimum/maximum watch count, with Show all/reset.

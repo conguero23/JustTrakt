@@ -44,17 +44,26 @@
     const f=currentFilters || filterDefaults;
     return (f.hideWatched&&movie.watched)||(f.seenBefore&&(!movie.date || movie.date>=f.seenBefore))||movie.plays<f.minPlays||(f.maxPlays!==null&&movie.plays>f.maxPlays);
   }
+  function cardHost(cover){
+    const details=cover.closest('.trakt-summary-card')?.querySelector('.trakt-summary-card-details');
+    if(!details)return cover;
+    let dock=details.querySelector(':scope > .justtrakt-trakt-dock');
+    if(!dock){dock=document.createElement('div');dock.className='justtrakt-trakt-dock';const titles=details.querySelector(':scope > .trakt-summary-card-titles');if(titles)titles.after(dock);else details.append(dock);}
+    if(!details.classList.contains('justtrakt-details-layout'))details.classList.add('justtrakt-details-layout');
+    return dock;
+  }
   function extra(host,movie,candidate,preferences={}){
     let panel=host.querySelector(':scope > .justtrakt-trakt-tools');
     const title=movie?.title || candidate.title || candidate.slug.replace(/-\d{4}$/,'').replace(/-/g,' ');
-    const signature=JSON.stringify([candidate.slug,movie,preferences.traktWatchCounts,preferences.traktRewatch,title]);
+    const docked=host.classList.contains('justtrakt-trakt-dock');
+    const signature=JSON.stringify([candidate.slug,movie,preferences.traktWatchCounts,preferences.traktRewatch,title,docked]);
     if(panel?.dataset.signature===signature&&panel.querySelector('[data-action="jw"]')&&panel.querySelector('[data-action="note"]'))return;
     panel?.remove();panel=document.createElement('div');panel.className=`justtrakt-trakt-tools${candidate.info?' justtrakt-trakt-detail-tools':''}`;panel.dataset.signature=signature;
-    if(!candidate.info&&!host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
+    if(!candidate.info&&!docked&&!host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
     if(movie?.plays>0 && preferences.traktWatchCounts!==false){const count=document.createElement('span');count.className='justtrakt-trakt-count';count.textContent=`Seen ${movie.plays} time${movie.plays===1?'':'s'}`;panel.append(count);}
-    if(movie?.rewatch && preferences.traktRewatch!==false){const flag=document.createElement('span');flag.className='justtrakt-trakt-rewatch';flag.textContent='Rewatch · 3+ years';flag.title='Last watched more than three calendar years ago.';panel.append(flag);}
+    if(movie?.rewatch && preferences.traktRewatch!==false){const flag=document.createElement('span');flag.className='justtrakt-trakt-rewatch';flag.textContent=docked?'3+ yr rewatch':'Rewatch · 3+ years';flag.title='Last watched more than three calendar years ago.';panel.append(flag);}
     const actions=document.createElement('div');actions.className='justtrakt-trakt-actions';
-    for(const [action,label] of [['jw','Find on JustWatch'],['note','Private note']]){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.slug=candidate.slug;button.dataset.title=title;button.textContent=label;actions.append(button);}
+    for(const [action,label] of [['jw',docked?'JustWatch ↗':'Find on JustWatch'],['note',docked?'Note +':'Private note']]){const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.slug=candidate.slug;button.dataset.title=title;button.textContent=label;button.setAttribute('aria-label',action==='jw'?'Find streaming options on JustWatch':'Open private movie note');button.title=action==='jw'?'Find streaming options on JustWatch':'Open private movie note';actions.append(button);}
     panel.append(actions);host.append(panel);
   }
   document.addEventListener('click',async event=>{
@@ -69,7 +78,7 @@
     let node=host.querySelector(`:scope > ${selector}`);
     if(!result){node?.remove();return;}
     if(!node){node=document.createElement(info?'p':'span');node.className=selector.slice(1);host.append(node);}
-    if(!info && !host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
+    if(!info && !host.classList.contains('justtrakt-trakt-dock') && !host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
     const text=`Last seen ${result.date}`;
     if(node.textContent!==text)node.textContent=text;
     node.title=`JustTrakt${result.username?` · @${result.username}`:''} · Last watched ${result.date}. From the account connected to this extension.`;
@@ -81,11 +90,11 @@
       for(const link of document.querySelectorAll('a[href*="/movies/"]')){
         const slug=slugOf(link.href);if(!slug)continue;
         const cover=link.querySelector('.trakt-card-cover') || (link.querySelector('img')?link:null);
-        if(cover&&!visited.has(cover)){candidates.push({host:cover,slug,title:link.closest('.trakt-card-content')?.querySelector('.trakt-card-title')?.textContent?.trim() || link.querySelector('img')?.alt?.replace(/^poster (?:for|of)\s+/i,'').trim()});visited.add(cover);}
+        if(cover&&!visited.has(cover)){candidates.push({host:cardHost(cover),slug,title:link.closest('.trakt-card-content')?.querySelector('.trakt-card-title')?.textContent?.trim() || link.querySelector('img')?.alt?.replace(/^poster (?:for|of)\s+/i,'').trim()});visited.add(cover);}
       }
       const detailSlug=slugOf(location.href);
       if(detailSlug){
-        for(const host of document.querySelectorAll('.trakt-summary-poster'))if(!visited.has(host)){candidates.push({host,slug:detailSlug,detail:true});visited.add(host);}
+        for(const host of document.querySelectorAll('.trakt-summary-poster'))if(!host.closest('.trakt-card')&&!visited.has(host)){candidates.push({host,slug:detailSlug,detail:true});visited.add(host);}
         const sections=document.querySelectorAll('.trakt-summary-main-content, .trakt-media-summary-body, .trakt-summary-header');
         for(const host of sections)if(![...sections].some(other=>other!==host&&other.contains(host)))candidates.push({host,slug:detailSlug,info:true,detail:true,title:document.querySelector('h1')?.textContent?.trim()});
         if(!sections.length){const heading=document.querySelector('main h1,h1');if(heading?.parentElement)candidates.push({host:heading.parentElement,slug:detailSlug,info:true,detail:true,title:heading.textContent?.trim()});}
@@ -107,7 +116,8 @@
           if(!candidate.detail){const link=candidate.host.closest('a[href]');if(link&&slugOf(link.href)!==candidate.slug){schedule();return;}}
           render(candidate.host,response.dates[i],candidate.info);
           const movie=response.movies?.[i] || (response.dates[i]?{...response.dates[i],plays:1,watched:true}:null);
-          extra(candidate.host,movie,candidate,response.settings);
+          if(!candidate.detail||candidate.info)extra(candidate.host,movie,candidate,response.settings);
+          else candidate.host.querySelector(':scope > .justtrakt-trakt-tools')?.remove();
           if(!candidate.detail){const card=candidate.host.closest('.trakt-card') || candidate.host.closest('.trakt-card-content') || candidate.host.closest('a') || candidate.host;const hide=isFiltered(movie);card.classList.toggle('justtrakt-trakt-filtered',!!hide);loaded++;if(hide)hidden++;if(!movie||movie.watched===null)unknown++;}
         });
       }

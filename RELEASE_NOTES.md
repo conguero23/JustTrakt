@@ -1,23 +1,20 @@
-# JustTrakt 1.5.0 (Beta)
+# JustTrakt 1.5.1 (Beta)
 
-All requested Trakt movie tools, with the rewatch threshold set to more than **3 years**:
+A cleaner Trakt card layout:
 
-- Hide watched / unwatched-only browsing.
-- Last-seen-before date and min/max watch-count filters with Show all / Reset.
-- Seen N times labels on covers and information pages.
-- Rewatch reminders only after strictly more than three calendar years.
-- Find on JustWatch actions, using a configurable two-letter country code. Links open title searches; provider availability is not fetched or claimed.
-- Private local notes in an extension-owned editor, with save/delete and concurrent-edit protection. Note text is never sent to services or inserted into Trakt's page DOM. Disconnect/uninstall deletes notes.
+- Last seen and watch counts now sit beneath the title in the right-hand details panel.
+- Compact JustWatch and Note buttons share an aligned row, with descriptive accessible labels.
+- Posters remain clear on summary cards. Native metadata, watched status and ratings stay visible.
+- Rewatch reminders stay compact and keep the more-than-three-year threshold.
+- Fix duplicate detail-poster actions and prevent related movie cards inheriting the current detail movie date.
 
-Download **justtrakt-1.5.0.zip**, replace the files in your permanent extension
-folder, Reload in chrome://extensions, and refresh Trakt and JustWatch. Connection
-and extension ID stay unchanged. No new host permissions. Settings are in the
-popup's On Trakt section; browsing filters appear on Trakt movie grids.
+All previous movie tools and private notes remain available. No new permissions
+or authentication changes. The compact-card layout was visually checked in a
+local preview using Trakt's published structure; live Trakt access remains blocked
+in the automated browser, so verify placement in your normal session.
 
-Filters affect loaded cards only. Unknown history stays visible until sync. Notes
-have no backup and are limited to 4,000 characters/movie and 1,000 movies, subject
-to browser storage quota. All previous features remain; watched history stays read-only.
+Download **justtrakt-1.5.1.zip**, replace your installed extension files, Reload in
+chrome://extensions, and refresh Trakt. The extension ID, settings and login stay unchanged.
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. Independent project,
-not affiliated with JustWatch. This is a beta tested with mocked API/DOM fixtures;
-normal-session visual verification is still needed because automated access was blocked.
+not affiliated with JustWatch.
