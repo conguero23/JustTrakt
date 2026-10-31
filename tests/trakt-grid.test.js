@@ -45,3 +45,12 @@ test('deep wrappers and direct main children get poster layout and restore all n
   d.querySelector('#deep').remove();d.querySelector('main').insertAdjacentHTML('beforeend',card('movies','three')+card('shows','four'));
   change({settings:{newValue:{traktPosterGrid:true}}},'local');await wait();assert.ok(d.querySelector('main.justtrakt-poster-grid'));
 });
+
+test('poster picture wrappers resize without changing rating icons or native watch handlers',async t=>{
+  const dom=new JSDOM(`<main><div>${card('movies','one').replace('<img alt="one">','<div class="image-shell" style="max-height:180px"><picture><img alt="one"></picture></div><img class="rating-icon" alt="IMDb" width="16" height="8">').replace('</article>','<button class="native-watch" aria-label="Mark watched">check</button></article>')}${card('shows','two')}</div></main>`,{url:'https://app.trakt.tv/discover',runScripts:'outside-only'});t.after(()=>dom.window.close());
+  let change;dom.window.chrome={storage:{local:{get:async()=>({settings:{traktPosterGrid:true}})},onChanged:{addListener:fn=>change=fn}}};
+  const d=dom.window.document,native=d.querySelector('.native-watch');let clicks=0;native.onclick=()=>clicks++;
+  d.querySelectorAll('.trakt-card').forEach(n=>n.getBoundingClientRect=()=>({top:10,width:160,height:240}));native.getBoundingClientRect=()=>({top:0,bottom:20,width:24,height:24});
+  dom.window.eval(source);await wait();assert.ok(d.querySelector('picture.justtrakt-grid-art-layer'));assert.ok(d.querySelector('.image-shell.justtrakt-grid-art-layer'));assert.ok(d.querySelector('picture img.justtrakt-grid-artwork'));assert.equal(d.querySelector('.rating-icon.justtrakt-grid-artwork'),null);assert.ok(native.classList.contains('justtrakt-grid-floating-control'));native.click();assert.equal(clicks,1);
+  change({settings:{newValue:{traktPosterGrid:false}}},'local');await wait();assert.equal(d.querySelector('.justtrakt-grid-art-layer,.justtrakt-grid-artwork,.justtrakt-grid-floating-control'),null);assert.equal(d.querySelector('.image-shell').style.maxHeight,'180px');native.click();assert.equal(clicks,2);
+});

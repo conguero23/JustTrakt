@@ -1,7 +1,7 @@
 (() => {
   let enabled=false,timer,pending=false;
   const marked=new Set();
-  const classes=['justtrakt-poster-grid','justtrakt-grid-slot','justtrakt-grid-card','justtrakt-grid-wrapper'];
+  const classes=['justtrakt-poster-grid','justtrakt-grid-slot','justtrakt-grid-card','justtrakt-grid-wrapper','justtrakt-grid-artwork','justtrakt-grid-art-layer','justtrakt-grid-floating-control'];
   function clear(){for(const node of marked)node.classList.remove(...classes);marked.clear();}
   function mark(node,name){node.classList.add(name);marked.add(node);}
   function mediaCard(card){
@@ -50,6 +50,11 @@
     // Cache every card's ancestry instead of assuming a fixed number of wrappers.
     for(const card of cards){
       mark(card,'justtrakt-grid-card');
+      const image=card.querySelector('.trakt-card-cover picture img')||card.querySelector('.trakt-card-cover img')||card.querySelector('.trakt-summary-poster img');
+      if(image){
+        mark(image,'justtrakt-grid-artwork');
+        for(let layer=image.parentElement;layer&&layer!==card&&!layer.matches('.trakt-card-cover,.trakt-summary-poster');layer=layer.parentElement)mark(layer,'justtrakt-grid-art-layer');
+      }
       for(let child=card,parent=child.parentElement;parent&&root.contains(parent);child=parent,parent=parent.parentElement){
         if(!branches.has(parent))branches.set(parent,new Set());branches.get(parent).add(child);
         if(parent===root||parent.matches('section,aside'))break;
@@ -72,6 +77,16 @@
           break;
         }
         if(parent===root||parent.matches('section,aside'))break;
+      }
+    }
+    // Native circular controls can sit halfway outside the old horizontal cover.
+    // Bring only clipped controls inside the poster, preserving their handlers.
+    for(const card of cards){
+      const bounds=card.getBoundingClientRect();if(!bounds.width||!bounds.height)continue;
+      for(const control of card.querySelectorAll('button,[role=button],a[aria-label],a[title]')){
+        if(control.closest('.justtrakt-trakt-tools'))continue;
+        const box=control.getBoundingClientRect();
+        if(box.width>0&&box.width<=48&&box.height>0&&box.height<=48&&box.top<bounds.top&&box.bottom>bounds.top)mark(control,'justtrakt-grid-floating-control');
       }
     }
   }

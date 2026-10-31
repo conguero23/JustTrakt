@@ -1,17 +1,16 @@
-# JustTrakt 1.7.2 (Beta)
+# JustTrakt 1.7.3 (Beta)
 
-Fixes JustWatchIt changing button color without changing card layout.
+Refines JustWatchIt cards:
 
-Grid detection no longer stops after four wrappers or skips positioned slots.
-It supports direct main children and nested movie/show cards, overrides fixed row
-sizing in grid mode, and restores native layout when switched off.
-A poster count appears beside the button; missing posters are reported explicitly.
+- Full-height artwork through native picture wrappers.
+- Compact gradient footer with ratings kept inside card edges.
+- Clipped native circular controls moved inside the poster.
+- Existing actions, rating icons and native handlers preserved.
+- Original sizing and positioning restored when switching off.
 
-Download **justtrakt-1.7.2.zip**, replace ALL installed extension files,
-Reload in chrome://extensions, then refresh Trakt tabs to load the updated CSS
-and content script. Your login and settings remain.
+Download **justtrakt-1.7.3.zip**, replace the extension files,
+Reload in chrome://extensions, then refresh Trakt tabs.
+Your login and settings remain unchanged.
 
-Validated with regression tests and browser measurements of a deeply nested,
-positioned card fixture: 330x220 cards become approximately 161x241 posters,
-and switching off restores 330x220 cards and native slot positioning.
-Live Trakt access was unavailable during validation.
+Validated with DOM regression tests and local browser measurements for artwork,
+footer, watch controls and hover-action bounds. Live Trakt layouts may vary.

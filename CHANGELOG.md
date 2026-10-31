@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.3 - 2026-10-31
+
+- Fill native image/picture wrappers so poster artwork reaches the bottom of grid cards.
+- Reset native footer sizing and offsets to keep ratings inside a compact gradient footer.
+- Move clipped circular controls inside the poster without replacing their handlers.
+- Restore artwork wrappers and controls when disabling JustWatchIt.
+
 ## 1.7.2 - 2026-10-31
 
 - Fix JustWatchIt turning on without applying poster styles to nested or positioned cards.
