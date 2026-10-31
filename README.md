@@ -10,6 +10,8 @@ Your Trakt history, right on JustWatch. An independent Chrome extension with:
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. It is not affiliated with JustWatch.
 
+[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.2.0) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
+
 ## Install from a GitHub release
 
 1. Download **justtrakt-1.2.0.zip** from the repository's Releases page.
