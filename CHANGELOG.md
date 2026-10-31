@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.0 — 2026-10-31
+
+- Trakt movie filters: unwatched only/hide watched, last-seen-before date and minimum/maximum watch count, with Show all/reset.
+- Movie watch-count labels and rewatch reminders strictly after three calendar years.
+- Find on JustWatch actions on Trakt covers and information pages, with a configurable country code. These open title searches rather than displaying unverified provider listings.
+- Private local notes in an extension-owned editor, with save/delete, length limits and concurrent-edit protection. Disconnect clears saved notes.
+- No new site permissions or watched-history writes.
+
 ## 1.4.0 — 2026-10-31
 
 - Animated, accessible loading indicators for checking, adding and removing watchlist items, with duplicate-click protection and reduced-motion support.

@@ -6,7 +6,9 @@ test('service worker completes PKCE login and shares single-use refresh across c
   t.after(()=>{globalThis.chrome=previousChrome;globalThis.fetch=previousFetch;});
   let state={credentials:{clientId:'a'.repeat(64),clientSecret:'legacy-test-only'}},listener,refreshes=0;
   const requests=[];
+  const opened=[];
   globalThis.chrome={
+    tabs:{create:async value=>{opened.push(value.url);}},
     storage:{local:{
       get:async key=>key==='credentials'?{credentials:structuredClone(state.credentials)}:structuredClone(state),
       set:async value=>Object.assign(state,structuredClone(value)),
@@ -45,6 +47,14 @@ test('service worker completes PKCE login and shares single-use refresh across c
   const checks=await Promise.all([invoke('watchlistStatus',{item:{type:'movie',imdb:'tt1'}}),invoke('watchlistStatus',{item:{type:'show',imdb:'tt2'}})]);
   assert.ok(checks.every(r=>r.ok));assert.equal(refreshes,1);
   assert.ok(requests.some(r=>r.url.includes('/sync/watched/shows?extended=progress')));
+  const notes=(type,data={})=>new Promise(resolve=>listener({type,...data},{url:'chrome-extension://test/notes.html?slug=movie'},resolve));
+  const first=await notes('saveNote',{slug:'inception-2010',text:'Watch with family',expectedUpdatedAt:null});assert.equal(first.ok,true);
+  assert.equal((await notes('noteState',{slug:'inception-2010'})).text,'Watch with family');
+  const conflict=await notes('saveNote',{slug:'inception-2010',text:'Overwrite',expectedUpdatedAt:null});assert.equal(conflict.ok,false);assert.match(conflict.error,/another tab/);
+  const tooLong=await notes('saveNote',{slug:'inception-2010',text:'x'.repeat(4001)});assert.equal(tooLong.ok,false);
+  const external=(type,data={})=>new Promise(resolve=>listener({type,...data},{url:'https://app.trakt.tv/movies/inception-2010'},resolve));
+  await external('openNotes',{slug:'inception-2010'});assert.equal(opened[0],'chrome-extension://test/notes.html?slug=inception-2010');
+  await external('openJustWatch',{title:'Inception'});assert.equal(opened[1],'https://www.justwatch.com/us/search?q=Inception');
   const disconnected=await invoke('disconnect');assert.equal(disconnected.ok,true);
-  assert.equal(state.tokens,undefined);assert.equal(state.watchlistCache,undefined);
+  assert.equal(state.tokens,undefined);assert.equal(state.watchlistCache,undefined);assert.equal(state.movieNotes,undefined);
 });

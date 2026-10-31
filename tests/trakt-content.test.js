@@ -33,3 +33,20 @@ test('last-seen lookup requires exact cached slug/ID, watched plays, and a valid
   assert.equal(movieDates({...state,tokens:null},['inception-2010'])[0],null);
   assert.equal(movieDates({...state,settings:{traktLastSeen:false}},['inception-2010'])[0],null);
 });
+
+test('Trakt filters hide watched cards, reset safely, and actions open JustWatch and private note editor',async t=>{
+  const {dom,doc,calls}=page('https://app.trakt.tv/discover/trending?mode=movie','<main><a href="/movies/inception-2010"><div class="trakt-card-cover"><img alt="Inception"></div></a><a href="/movies/unknown"><img alt="Unknown"></a></main>');t.after(()=>dom.window.close());
+  let config={hideWatched:false,seenBefore:'',minPlays:0,maxPlays:null};
+  dom.window.chrome.runtime.sendMessage=async message=>{
+    calls.push(message);
+    if(message.type==='traktFilters'){config=message.filters;return {ok:true};}
+    if(message.type==='openJustWatch'||message.type==='openNotes')return {ok:true};
+    return {ok:true,dates:message.slugs.map(slug=>slug==='inception-2010'?{date:'2020-01-01',username:'owner'}:null),movies:message.slugs.map(slug=>slug==='inception-2010'?{watched:true,plays:3,date:'2020-01-01',rewatch:true,title:'Inception',username:'owner'}:{watched:false,plays:0,date:null,rewatch:false}),settings:{},filters:config};
+  };
+  await wait();assert.equal(doc.querySelector('.justtrakt-trakt-count').textContent,'Seen 3 times');assert.match(doc.querySelector('.justtrakt-trakt-rewatch').textContent,/3\+ years/);
+  const input=doc.querySelector('[data-filter="hideWatched"]');input.checked=true;input.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await wait();
+  assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,1);
+  doc.querySelector('.justtrakt-trakt-filterbar > button').click();await wait();assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,0);
+  doc.querySelector('[data-action="jw"]').click();await wait();assert.equal(calls.find(c=>c.type==='openJustWatch').title,'Inception');
+  doc.querySelector('[data-action="note"]').click();await wait();assert.equal(calls.find(c=>c.type==='openNotes').slug,'inception-2010');
+});

@@ -16,6 +16,20 @@ This feature performs no extra title/history API calls and can be disabled under
 On Trakt in the popup. Access to app.trakt.tv and trakt.tv is used to render these
 annotations; no page cookies, form contents or website session tokens are read.
 
+Version 1.5.0 adds local watch-count/date filters and rewatch reminders for movies
+last watched strictly more than three calendar years ago. Filter preferences are
+stored locally. Clicking Find on JustWatch opens a search page for that movie
+title in your selected country; JustWatch receives that normal navigation/query
+only when clicked. The extension does not fetch provider availability in the background.
+
+Private movie notes are entered on an extension-owned page, not inserted into
+Trakt's page DOM, and stored only in local extension storage. Note text is never
+sent to Trakt, JustWatch, GitHub or the developer. Limits are 4,000 characters per
+movie and 1,000 movies, subject to the browser's local storage quota. Notes remain
+until deleted, Disconnect, or uninstall. Disconnect deletes all saved notes.
+There is no backup or server recovery. Browser-profile access can expose notes;
+they are not encrypted by this extension.
+
 ## Data used
 
 - Your public Trakt Client ID and OAuth access/refresh tokens, to connect to Trakt.

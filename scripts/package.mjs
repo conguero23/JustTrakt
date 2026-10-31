@@ -7,7 +7,7 @@ const root=resolve(import.meta.dirname,'..');
 const manifest=JSON.parse(await readFile(resolve(root,'manifest.json'),'utf8'));
 const pkg=JSON.parse(await readFile(resolve(root,'package.json'),'utf8'));
 if (pkg.version!==manifest.version) throw new Error('Manifest/package versions differ.');
-const runtime=['manifest.json','background.js','auth.js','core.js','trakt-features.js','updates.js','content.js','content-features.js','content.css','trakt-content.js','trakt-content.css','inject.js','popup.html','popup.js','popup.css','privacy.html','privacy.css','PRIVACY.md','THIRD_PARTY_NOTICES.md','LICENSE','README.md','SECURITY.md'];
+const runtime=['manifest.json','background.js','auth.js','core.js','trakt-features.js','updates.js','content.js','content-features.js','content.css','trakt-content.js','trakt-content.css','trakt-tools.js','notes.html','notes.css','notes.js','inject.js','popup.html','popup.js','popup.css','privacy.html','privacy.css','PRIVACY.md','THIRD_PARTY_NOTICES.md','LICENSE','README.md','SECURITY.md'];
 async function files(dir) {
   const result=[];
   for (const entry of await readdir(resolve(root,dir),{withFileTypes:true})) {

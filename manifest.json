@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "JustTrakt - Watched on JustWatch",
-  "version": "1.4.0",
-  "description": "Trakt watched badges, ratings and watchlists on JustWatch, plus last-seen movie dates on Trakt.",
+  "version": "1.5.0",
+  "description": "Trakt history on JustWatch, plus movie dates, counts, rewatch reminders, filters and private local notes on Trakt.",
   "permissions": [
     "storage",
     "alarms",

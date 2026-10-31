@@ -2,8 +2,10 @@ import { defaults, settings, buildIndex, match, watchedDate, diagnostic, movieDa
 import { createUpdateChecker } from './updates.js';
 import { createFeatures } from './trakt-features.js';
 import { AUTH, createLogin, tokenBody } from './auth.js';
+import {toolsForMovies,filters,noteKeys,movieSlug,justWatchUrl} from './trakt-tools.js';
 const API = 'https://api.trakt.tv';
 let syncTask, authTask, deviceTask, refreshTask, generation = 0;
+let noteTask=Promise.resolve();
 // Remove legacy client secrets on upgrade; neither supported login flow needs one.
 const ready = chrome.storage.local.get(null).then(async state => {
   const {credentials}=state;
@@ -122,25 +124,45 @@ chrome.alarms.create('sync', { periodInMinutes: 30 });
 chrome.alarms.create('auth',{periodInMinutes:0.5});
 chrome.alarms.onAlarm.addListener(alarm => { if(alarm.name==='auth')pollDevice().catch(()=>{});else if(alarm.name==='sync') read().then(s=>s.tokens && sync()).catch(()=>{}); });
 const features = createFeatures({read, save: value => chrome.storage.local.set(value), request, access, pages});
-const checkUpdates=createUpdateChecker({read,save:value=>chrome.storage.local.set(value),version:chrome.runtime.getManifest?.().version || '1.3.1'});
+const checkUpdates=createUpdateChecker({read,save:value=>chrome.storage.local.set(value),version:chrome.runtime.getManifest?.().version || '1.5.0'});
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const fromPopup = sender.url === chrome.runtime.getURL('popup.html');
+  const fromNotes=sender.url?.split('?')[0]===chrome.runtime.getURL('notes.html');
   let fromJustWatch = false;
   let fromTrakt=false;
   try { const url = new URL(sender.url); fromJustWatch = url.protocol === 'https:' && (url.hostname === 'justwatch.com' || url.hostname.endsWith('.justwatch.com')); } catch {}
   try{const url=new URL(sender.url);fromTrakt=url.protocol==='https:' && ['app.trakt.tv','trakt.tv'].includes(url.hostname);}catch{}
-  if (!fromPopup && !(fromTrakt && message.type==='traktMovieDates') && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
+  if (!fromPopup && !(fromNotes&&['noteState','saveNote'].includes(message.type)) && !(fromTrakt && ['traktMovieDates','traktFilters','openNotes','openJustWatch'].includes(message.type)) && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
   (async () => {
     const state = await read();
     switch (message.type) {
-      case 'traktMovieDates': return {dates:movieDates(state,Array.isArray(message.slugs)?message.slugs:[])};
+      case 'traktMovieDates': {const slugs=Array.isArray(message.slugs)?message.slugs:[];return {dates:movieDates(state,slugs),movies:toolsForMovies(state,slugs),settings:settings(state.settings),filters:filters(state.traktFilters)};}
+      case 'traktFilters': await chrome.storage.local.set({traktFilters:filters(message.filters)});return;
+      case 'openJustWatch': await chrome.tabs.create({url:justWatchUrl(message.title,settings(state.settings).justWatchCountry)});return;
+      case 'openNotes': await chrome.tabs.create({url:chrome.runtime.getURL(`notes.html?slug=${encodeURIComponent(movieSlug(message.slug))}`)});return;
+      case 'noteState': {const keys=noteKeys(state,message.slug),note=keys.map(k=>state.movieNotes?.[k]).find(Boolean);return {text:note?.text || '',updatedAt:note?.updatedAt || null};}
+      case 'saveNote': {
+        const noteEpoch=generation;
+        const task=noteTask.catch(()=>{}).then(async()=>{
+          if(noteEpoch!==generation)throw new Error('The connected account changed. Reopen the note editor before saving.');
+          const current=await read(),keys=noteKeys(current,message.slug);if(typeof message.text!=='string'||message.text.length>4000)throw new Error('Notes are limited to 4,000 characters.');
+          const existing=keys.map(k=>current.movieNotes?.[k]).find(Boolean);
+          if(message.expectedUpdatedAt!==undefined&&(existing?.updatedAt || null)!==message.expectedUpdatedAt)throw new Error('This note changed in another tab. Copy your draft, then reload before saving.');
+          const notes={...current.movieNotes};for(const key of keys)delete notes[key];
+          const updatedAt=message.text.trim()?Math.max(Date.now(),(existing?.updatedAt || 0)+1):null;
+          if(updatedAt)notes[keys[0]]={text:message.text,updatedAt};
+          if(Object.keys(notes).length>1000)throw new Error('Local notes limit reached (1,000 movies). Delete a note before adding another.');
+          if(noteEpoch!==generation)throw new Error('The connected account changed. Reopen the note editor before saving.');
+          await chrome.storage.local.set({movieNotes:notes});return {updatedAt};
+        });noteTask=task;return await task;
+      }
       case 'titleDetail': return { detail: await features.detail(message.item) };
       case 'titleInfo': return {info:await features.info(message.item)};
       case 'addWatchlist': return await features.add(message.item);
       case 'removeWatchlist': return await features.remove(message.item);
       case 'watchlistStatus': return await features.membership(message.item);
       case 'match': return { statuses: (message.items || []).slice(0, 1000).map(item => {const hit=match(state.index || {}, item);return hit ? {...hit,dateLabel:watchedDate(hit)}:null;}), diagnostics:(message.items || []).slice(0,1000).map(item=>diagnostic(state,item)), settings: settings(state.settings) };
-      case 'state': checkUpdates().catch(()=>{}); return { updates:state.updateCheck, version:chrome.runtime.getManifest?.().version || '1.3.1', connected: !!state.tokens, username: state.username, connecting: !!authTask, device:state.device && {user_code:state.device.user_code,expiresAt:state.device.expiresAt}, redirectUri: chrome.identity.getRedirectURL('trakt'), clientId: state.credentials?.clientId || '', lastSync: state.lastSync, error: state.error, settings: settings(state.settings), configured: !!state.credentials, counts: { movies: state.cache?.movies?.length || 0, shows: state.cache?.shows?.length || 0 } };
+      case 'state': checkUpdates().catch(()=>{}); return { updates:state.updateCheck, version:chrome.runtime.getManifest?.().version || '1.5.0', connected: !!state.tokens, username: state.username, connecting: !!authTask, device:state.device && {user_code:state.device.user_code,expiresAt:state.device.expiresAt}, redirectUri: chrome.identity.getRedirectURL('trakt'), clientId: state.credentials?.clientId || '', lastSync: state.lastSync, error: state.error, settings: settings(state.settings), configured: !!state.credentials, counts: { movies: state.cache?.movies?.length || 0, shows: state.cache?.shows?.length || 0 } };
       case 'checkUpdates': return {updates:await checkUpdates(true)};
       case 'showAll': await chrome.storage.local.set({settings:{...settings(state.settings),hideWatched:false}});return;
       case 'connect': await connect(message.clientId?.trim(),message.mode); return;
@@ -148,7 +170,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       case 'cancelLogin': generation++;await chrome.storage.local.remove('device');await chrome.storage.local.set({error:null});return;
       case 'sync': await sync(true); return;
       case 'settings': { const value = settings(message.settings); await chrome.storage.local.set({ settings: value, ...buildIndex(state.cache, value, state.baselines) }); return; }
-      case 'disconnect': generation++; await chrome.storage.local.remove(['tokens','credentials','device','username','cache','activities','index','baselines','lastSync','lastFullSync','error','titleDetails','watchlistCache','showProgress']); return;
+      case 'disconnect': generation++; await chrome.storage.local.remove(['tokens','credentials','device','username','cache','activities','index','baselines','lastSync','lastFullSync','error','titleDetails','watchlistCache','showProgress','movieNotes']); return;
       default: throw new Error('Unknown action.');
     }
   })().then(data => reply({ ok: true, ...data }), e => reply({ ok: false, error: e.message })); return true;

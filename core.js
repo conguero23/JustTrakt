@@ -1,7 +1,8 @@
-export const defaults = { minProgress: 5, completeProgress: 90, dimWatched: false, showProgress: true, hideWatched: false, showDiagnostics: false, checkUpdates: true, traktLastSeen: true };
+export const defaults = { minProgress: 5, completeProgress: 90, dimWatched: false, showProgress: true, hideWatched: false, showDiagnostics: false, checkUpdates: true, traktLastSeen: true, traktWatchCounts:true, traktRewatch:true, justWatchCountry:'us' };
 export function settings(input = {}) {
   const result = { ...defaults, ...input };
   if (!Number.isFinite(result.minProgress) || !Number.isFinite(result.completeProgress) || result.minProgress < 0 || result.completeProgress > 100 || result.minProgress >= result.completeProgress) throw new Error('Thresholds must satisfy 0 ≤ minimum < complete ≤ 100.');
+  if(!/^[a-z]{2}$/.test(result.justWatchCountry))throw new Error('Use a two-letter JustWatch country code, such as us, gb or bo.');
   return result;
 }
 export const normalize = title => String(title || '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\b(the|an|a)\b/g, ' ').replace(/\s+/g, ' ').trim();
