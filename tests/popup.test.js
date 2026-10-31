@@ -25,4 +25,6 @@ test('public popup defaults to development device login and keeps production PKC
   await new Promise(resolve=>setTimeout(resolve,20));
   const login=calls.find(c=>c.type==='connect');
   assert.equal(login.clientId,'a'.repeat(64));assert.equal(login.mode,'device');assert.equal('clientSecret' in login,false);
+  d.querySelector('#justWatchIt').click();await new Promise(resolve=>setTimeout(resolve,20));
+  const layout=calls.find(c=>c.type==='settings');assert.equal(layout.settings.traktPosterGrid,true);assert.equal(layout.settings.minProgress,5);assert.equal(layout.settings.showProgress,true);
 });

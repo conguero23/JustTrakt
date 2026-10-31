@@ -1,4 +1,4 @@
-export const defaults = { minProgress: 5, completeProgress: 90, dimWatched: false, showProgress: true, hideWatched: false, showDiagnostics: false, checkUpdates: true, traktLastSeen: true, traktWatchCounts:true, traktRewatch:true, justWatchCountry:'us' };
+export const defaults = { minProgress: 5, completeProgress: 90, dimWatched: false, showProgress: true, hideWatched: false, showDiagnostics: false, checkUpdates: true, traktLastSeen: true, traktPosterGrid:false, traktWatchCounts:true, traktRewatch:true, justWatchCountry:'us' };
 export function settings(input = {}) {
   const result = { ...defaults, ...input };
   if (!Number.isFinite(result.minProgress) || !Number.isFinite(result.completeProgress) || result.minProgress < 0 || result.completeProgress > 100 || result.minProgress >= result.completeProgress) throw new Error('Thresholds must satisfy 0 ≤ minimum < complete ≤ 100.');

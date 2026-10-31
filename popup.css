@@ -2,3 +2,5 @@
 .update-notice{border:1px solid #c4ec8666;background:#1c291c;border-radius:7px;padding:12px;margin-bottom:16px;font-size:12px}.update-notice p{font-size:11px;color:var(--muted);margin:6px 0 0}#checkUpdate{margin-top:10px;width:100%}
 select{width:100%;margin-top:5px;padding:9px;border:1px solid var(--line);border-radius:6px;background:#0d120f;color:var(--text);font:12px Segoe UI,sans-serif}#code{display:block;text-align:center;padding:14px;background:var(--panel);font:26px monospace;letter-spacing:5px;color:var(--accent)}
 .site-settings{border:0;border-top:1px solid var(--line);margin:14px 0;padding:14px 0 0}.site-settings legend{font-size:13px;font-weight:600;color:var(--text);padding-right:8px}
+/* Immediate, reversible Trakt layout experiment. */
+.trakt-view-setting{display:flex;align-items:center;gap:10px;margin:8px 0 12px}.trakt-view-setting .toggle{flex:1;min-width:0;margin:0}.trakt-view-setting button{width:auto;flex-shrink:0;padding:7px 10px}.trakt-view-setting button[aria-pressed=true]{background:#ff79001c;border-color:#ff7900;color:#ffab64}.trakt-view-setting .hint{margin:0}

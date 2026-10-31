@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0 - 2026-10-31
+
+- Add the reversible JustWatchIt experiment beside Movie last-seen dates in the popup.
+- Display supported Trakt movie/show grids as responsive poster walls, retaining native links, ratings and hover/focus controls.
+- Handle new cards and settings changes without replacing page content; leave incompatible positioned lists unchanged.
+
 ## 1.6.2 - 2026-10-31
 
 - Show last-seen dates only for movies, on both posters and detail pages. Show progress and watched badges remain available.
