@@ -28,3 +28,13 @@ test('next-episode progress loads on demand, is cached, and invalidates after hi
   await features.info(item);assert.equal(calls.filter(c=>c.path.includes('/progress/watched')).length,1);
   state.lastFullSync=124;await features.info(item);assert.equal(calls.filter(c=>c.path.includes('/progress/watched')).length,2);
 });
+
+test('Trakt slug membership shares one watchlist snapshot; writes resolve the exact slug',async()=>{
+  const state={tokens:{access_token:'test'},credentials:{clientId:'test'}},requests=[];let lists=0;
+  const features=createFeatures({read:async()=>state,save:async value=>Object.assign(state,value),access:async()=>'test',pages:async()=>{lists++;return [{movie:{ids:{trakt:123,slug:'inception-2010'}}}];},request:async(path,opts)=>{requests.push({path,opts});if(path==='/sync/watchlist/remove')return {deleted:{movies:1}};if(path==='/sync/watchlist')return {added:{movies:1}};return {ids:{trakt:123,slug:'inception-2010'},rating:8,votes:10};}});
+  assert.equal((await features.membershipSlug('inception-2010')).inWatchlist,true);
+  assert.equal((await features.membershipSlug('123')).inWatchlist,true);assert.equal(lists,1);assert.equal(requests.length,0);
+  await features.remove({type:'movie',slug:'inception-2010'});assert.equal(requests[0].path,'/movies/inception-2010?extended=full');assert.equal((await features.membershipSlug('inception-2010')).inWatchlist,false);
+  await features.add({type:'movie',slug:'inception-2010'});assert.equal((await features.membershipSlug('inception-2010')).inWatchlist,true);assert.equal(lists,1);
+  assert.deepEqual(requests.find(r=>r.path==='/sync/watchlist').opts.body,{movies:[{ids:{trakt:123}}]});
+});

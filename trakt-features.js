@@ -2,6 +2,7 @@ import { normalize, watchedDate, diagnostic } from './core.js';
 
 export function titleKey(item) {
   if (!['movie', 'show'].includes(item?.type)) throw new Error('Unknown title type.');
+  if(typeof item.slug==='string'&&/^[a-z0-9][a-z0-9-]{0,200}$/.test(item.slug))return `${item.type}:slug:${item.slug}`;
   if (/^tt\d+$/.test(item.imdb)) return `${item.type}:imdb:${item.imdb}`;
   if (/^\d+$/.test(String(item.tmdb))) return `${item.type}:tmdb:${item.tmdb}`;
   if (item.title && Number.isInteger(Number(item.year)) && Number(item.year) > 1800) return `${item.type}:title:${normalize(item.title)}:${item.year}`;
@@ -23,6 +24,7 @@ export function createFeatures({ read, save, request, access, pages }) {
   async function resolve(item, state) {
     const opts = {clientId: state.credentials.clientId};
     const type = item.type, plural = type === 'movie' ? 'movies' : 'shows';
+    if(typeof item.slug==='string'&&/^[a-z0-9][a-z0-9-]{0,200}$/.test(item.slug))return request(`/${plural}/${encodeURIComponent(item.slug)}?extended=full`,opts);
     if (/^tt\d+$/.test(item.imdb)) return request(`/${plural}/${item.imdb}?extended=full`, opts);
     let results;
     if (/^\d+$/.test(String(item.tmdb))) results = await request(`/search/tmdb/${item.tmdb}?type=${type}`, opts);
@@ -40,7 +42,7 @@ export function createFeatures({ read, save, request, access, pages }) {
     const task = serial(async () => {
       const title = await resolve(item, state);
       if (!title?.ids?.trakt) throw new Error('Trakt did not return a title ID.');
-      const value = {trakt: title.ids.trakt, type:item.type, rating:typeof title.rating === 'number' ? title.rating : null, votes:title.votes || 0, fetchedAt:Date.now()};
+      const value = {trakt: title.ids.trakt, slug:title.ids.slug || item.slug || null, type:item.type, rating:typeof title.rating === 'number' ? title.rating : null, votes:title.votes || 0, fetchedAt:Date.now()};
       const current = await read();
       if (current.credentials?.clientId !== state.credentials.clientId || current.tokens?.access_token !== state.tokens.access_token) throw new Error('Account changed. Please try again.');
       const entries = Object.entries({...current.titleDetails, [key]:value}).sort((a,b)=>b[1].fetchedAt-a[1].fetchedAt).slice(0,1500);
@@ -61,22 +63,24 @@ export function createFeatures({ read, save, request, access, pages }) {
       const current = await read();
       if (!current.tokens || current.credentials?.clientId !== state.credentials.clientId) throw new Error('Account changed.');
       const snapshot = current.watchlistCache?.[title.type] || {ids:[],fetchedAt:Date.now()};
-      await save({watchlistCache:{...current.watchlistCache,[title.type]:{...snapshot,ids:remove ? snapshot.ids.filter(id=>id!==title.trakt) : [...new Set([...snapshot.ids,title.trakt])]}}});
+      const slug=title.slug || item.slug;
+      const slugs=remove?(snapshot.slugs || []).filter(s=>s!==slug):(slug?[...new Set([...(snapshot.slugs || []),slug])]:snapshot.slugs || []);
+      await save({watchlistCache:{...current.watchlistCache,[title.type]:{...snapshot,slugs,slugsComplete:snapshot.slugsComplete===true&&!!slug,ids:remove ? snapshot.ids.filter(id=>id!==title.trakt) : [...new Set([...snapshot.ids,title.trakt])]}}});
       return {added:!remove, removed:remove, inWatchlist:!remove, existing:!!result.existing?.[plural]};
     }).finally(()=>{pending.delete(key);if(mutations.get(base)===task)mutations.delete(base);});
     mutations.set(base,task);
     pending.set(key, task); return task;
   }
-  async function membership(item) {
-    const title = await detail(item), type = title.type, state = await read();
+  async function snapshotFor(type,requireSlugs=false) {
+    const state=await read();if(!state.tokens || !state.credentials)throw new Error('Connect Trakt in the extension popup first.');
     let snapshot = state.watchlistCache?.[type];
-    if (!snapshot || Date.now()-snapshot.fetchedAt > 300000) {
+    if (!snapshot || Date.now()-snapshot.fetchedAt > 300000 || (requireSlugs&&snapshot.slugsComplete!==true)) {
       const key = `watchlist:${type}`;
       if (!pending.has(key)) {
         const task = (async () => {
           const token = await access(await read());
           const rows = await pages(`/sync/watchlist/${type === 'movie' ? 'movies' : 'shows'}`, {clientId:state.credentials.clientId,token});
-          const value = {ids:rows.map(row=>row[type]?.ids?.trakt).filter(Number.isFinite),fetchedAt:Date.now()};
+          const value = {ids:rows.map(row=>row[type]?.ids?.trakt).filter(Number.isFinite),slugs:rows.map(row=>row[type]?.ids?.slug).filter(s=>typeof s==='string'),slugsComplete:true,fetchedAt:Date.now()};
           const current = await read();
           if (!current.tokens || current.credentials?.clientId !== state.credentials.clientId) throw new Error('Account changed.');
           await save({watchlistCache:{...current.watchlistCache,[type]:value}});
@@ -86,7 +90,16 @@ export function createFeatures({ read, save, request, access, pages }) {
       }
       snapshot = await pending.get(key);
     }
+    return snapshot;
+  }
+  async function membership(item) {
+    const title = await detail(item),snapshot=await snapshotFor(title.type);
     return {inWatchlist:snapshot.ids.includes(title.trakt),trakt:title.trakt};
+  }
+  async function membershipSlug(slug){
+    if(typeof slug!=='string'||!/^[a-z0-9][a-z0-9-]{0,200}$/.test(slug))throw new Error('Invalid movie identifier.');
+    const snapshot=await snapshotFor('movie',true);
+    return {inWatchlist:snapshot.slugs.includes(slug)||(/^\d+$/.test(slug)&&snapshot.ids.includes(Number(slug)))};
   }
   async function info(item) {
     const title=await detail(item),state=await read();
@@ -111,5 +124,5 @@ export function createFeatures({ read, save, request, access, pages }) {
     }
     try {return {...result,progress:await pending.get(taskKey)};}catch(error){return {...result,progressError:error.message};}
   }
-  return { detail, add:item=>changeWatchlist(item), remove:item=>changeWatchlist(item,true), membership, info };
+  return { detail, add:item=>changeWatchlist(item), remove:item=>changeWatchlist(item,true), membership, membershipSlug, info };
 }

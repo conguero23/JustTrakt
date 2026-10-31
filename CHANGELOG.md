@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0 — 2026-10-31
+
+- Add Watchlist + / Saved controls to Trakt movie cards and movie detail pages.
+- Check existing membership through a shared five-minute watchlist snapshot; resolve exact Trakt slugs only when writing.
+- Add/remove uses explicit clicks, loaders, duplicate-click protection and inline retryable errors.
+- Fit Watchlist and JustWatch actions in one charcoal/orange row beneath Last seen.
+
 ## 1.5.2 — 2026-10-31
 
 - Match Trakt's charcoal/white/orange UI across card tools and browsing filters.

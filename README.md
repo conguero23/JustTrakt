@@ -10,11 +10,11 @@ Your Trakt history, right on JustWatch. An independent Chrome extension with:
 
 JustTrakt uses Trakt but is not endorsed or certified by Trakt. It is not affiliated with JustWatch.
 
-[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.5.2) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
+[Download the latest beta](https://github.com/conguero23/JustTrakt/releases/tag/v1.6.0) · [Report a bug](https://github.com/conguero23/JustTrakt/issues) · [Privacy policy](PRIVACY.md)
 
 ## Install from a GitHub release
 
-1. Download **justtrakt-1.5.2.zip** from the repository's Releases page.
+1. Download **justtrakt-1.6.0.zip** from the repository's Releases page.
 2. Extract it to a permanent folder. Keep that folder; Chrome loads the files from there.
 3. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. In [Trakt Developers](https://developer.trakt.tv/), create a **Development** app with redirect URI **http://localhost**. Trakt may require your verified GitHub account. The form currently limits development apps to localhost callbacks and production registration requires contacting Trakt.
@@ -35,6 +35,16 @@ Set movie playback thresholds, dim watched posters, and show/hide in-progress ba
 Sync checks run approximately every 30 minutes; unchanged activity normally needs one request. Metadata gets a daily refresh to detect newly aired episodes even without account activity. **Sync now** forces a refresh and invalidates watchlist membership. A failed history sync retains the previous cache. All watched/playback/watchlist pages are paginated.
 
 Ratings load on demand and cache for 24 hours (up to 1,500 titles). Watchlist snapshots cache for five minutes. The extension checks membership before offering Add. Saved items offer removal when clicked, with the action described in the button tooltip and accessible label. Only clicks write to Trakt. Trakt account limits and network errors appear next to the control. Provider offer links keep their normal behavior.
+
+## New in 1.6.0: Watchlist on Trakt
+
+Movie cards and detail pages now have a **Watchlist +** button beside JustWatch.
+The extension checks membership first and displays **Saved** for items already
+in the connected account's watchlist. Click Saved to remove. Checking, adding and
+removing have visible spinners and disable duplicate clicks; failures show Retry
+and an inline error. These controls use the extension-connected account, not the
+website's session. They share a five-minute watchlist cache rather than fetching
+metadata separately for every card. Exact movie slugs/IDs are used for writes.
 
 ## UI update in 1.5.2
 

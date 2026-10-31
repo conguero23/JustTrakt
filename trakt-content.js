@@ -1,6 +1,7 @@
 (() => {
   let timer,running=false,again=false;
   let currentFilters=null,filterSaving=false;
+  const watchlists=new Map();
   const filterDefaults={hideWatched:false,seenBefore:'',minPlays:0,maxPlays:null};
   function slugOf(value){
     try{
@@ -52,23 +53,49 @@
     if(!details.classList.contains('justtrakt-details-layout'))details.classList.add('justtrakt-details-layout');
     return dock;
   }
+  function paintWatchlist(button,entry){
+    const busy=!!entry.pending,saved=entry.saved===true;
+    button.disabled=busy;button.setAttribute('aria-busy',String(busy));button.setAttribute('aria-live','polite');button.setAttribute('aria-pressed',String(saved));
+    button.textContent=busy?(entry.operation==='write'?(entry.next?'Adding…':'Removing…'):'Checking…'):entry.error?'Retry':saved?'Saved ✓':'Watchlist +';
+    button.title=entry.error || (saved?'Remove movie from the connected Trakt account’s watchlist':'Add movie to the connected Trakt account’s watchlist');button.setAttribute('aria-label',button.title);
+  }
+  function paintMovie(slug){const entry=watchlists.get(slug);if(entry)for(const button of document.querySelectorAll('[data-action="watchlist"]'))if(button.dataset.slug===slug)paintWatchlist(button,entry);}
+  function loadWatchlist(button,slug){
+    let entry=watchlists.get(slug);
+    if(entry&&(entry.pending||Date.now()-entry.checkedAt<60000)){paintWatchlist(button,entry);return;}
+    entry={pending:true,operation:'check',saved:null,checkedAt:Date.now()};watchlists.set(slug,entry);paintMovie(slug);
+    send('traktWatchlistStatus',{slug}).then(result=>{if(watchlists.get(slug)===entry)Object.assign(entry,{saved:result.inWatchlist===true,error:null});}).catch(error=>{if(watchlists.get(slug)===entry)entry.error=error.message;}).finally(()=>{if(watchlists.get(slug)===entry){entry.pending=false;entry.checkedAt=Date.now();paintMovie(slug);}});
+  }
+  async function changeWatchlist(button){
+    const slug=button.dataset.slug,entry=watchlists.get(slug);
+    if(!entry||entry.saved===null){watchlists.delete(slug);loadWatchlist(button,slug);return;}
+    if(entry.pending)return;
+    const next=!entry.saved;Object.assign(entry,{pending:true,operation:'write',next,error:null});paintMovie(slug);
+    button.parentElement.querySelector('.justtrakt-trakt-action-status')?.remove();
+    try{const result=await send(next?'traktAddWatchlist':'traktRemoveWatchlist',{slug});if(watchlists.get(slug)===entry)Object.assign(entry,{saved:typeof result.inWatchlist==='boolean'?result.inWatchlist:next,error:null});}
+    catch(error){if(watchlists.get(slug)===entry)entry.error=error.message;let status=button.parentElement.querySelector('.justtrakt-trakt-action-status');if(!status){status=document.createElement('span');status.className='justtrakt-trakt-action-status';status.setAttribute('role','status');button.parentElement.append(status);}status.textContent=error.message;}
+    finally{if(watchlists.get(slug)===entry){entry.pending=false;entry.checkedAt=Date.now();paintMovie(slug);}}
+  }
   function extra(host,movie,candidate,preferences={}){
     let panel=host.querySelector(':scope > .justtrakt-trakt-tools');
     const title=movie?.title || candidate.title || candidate.slug.replace(/-\d{4}$/,'').replace(/-/g,' ');
     const docked=host.classList.contains('justtrakt-trakt-dock');
     const signature=JSON.stringify([candidate.slug,movie,preferences.traktWatchCounts,preferences.traktRewatch,title,docked]);
-    if(panel?.dataset.signature===signature&&panel.querySelector('[data-action="jw"]')&&!panel.querySelector('[data-action="note"]'))return;
+    if(panel?.dataset.signature===signature&&panel.querySelector('[data-action="jw"]')&&panel.querySelector('[data-action="watchlist"]')&&!panel.querySelector('[data-action="note"]')){loadWatchlist(panel.querySelector('[data-action="watchlist"]'),candidate.slug);return;}
     panel?.remove();panel=document.createElement('div');panel.className=`justtrakt-trakt-tools${candidate.info?' justtrakt-trakt-detail-tools':''}`;panel.dataset.signature=signature;
     if(!candidate.info&&!docked&&!host.classList.contains('justtrakt-trakt-cover'))host.classList.add('justtrakt-trakt-cover');
     if(movie?.plays>0 && preferences.traktWatchCounts!==false){const count=document.createElement('span');count.className='justtrakt-trakt-count';count.textContent=`Seen ${movie.plays} time${movie.plays===1?'':'s'}`;panel.append(count);}
     if(movie?.rewatch && preferences.traktRewatch!==false){const flag=document.createElement('span');flag.className='justtrakt-trakt-rewatch';flag.textContent=docked?'3+ yr rewatch':'Rewatch · 3+ years';flag.title='Last watched more than three calendar years ago.';panel.append(flag);}
     const actions=document.createElement('div');actions.className='justtrakt-trakt-actions';
+    const watchlist=document.createElement('button');watchlist.type='button';watchlist.dataset.action='watchlist';watchlist.dataset.slug=candidate.slug;watchlist.textContent='Checking…';actions.append(watchlist);
     const button=document.createElement('button');button.type='button';button.dataset.action='jw';button.dataset.slug=candidate.slug;button.dataset.title=title;button.textContent=docked?'JustWatch':'Find on JustWatch';button.setAttribute('aria-label','Find streaming options on JustWatch');button.title='Find streaming options on JustWatch';
     const arrow=document.createElement('span');arrow.className='justtrakt-external';arrow.setAttribute('aria-hidden','true');arrow.textContent='↗';button.append(arrow);actions.append(button);
     panel.append(actions);host.append(panel);
+    loadWatchlist(watchlist,candidate.slug);
   }
   document.addEventListener('click',async event=>{
     const button=event.target.closest?.('.justtrakt-trakt-actions button');if(!button)return;
+    if(button.dataset.action==='watchlist'){event.preventDefault();event.stopImmediatePropagation();if(!button.disabled)await changeWatchlist(button);return;}
     event.preventDefault();event.stopImmediatePropagation();if(button.disabled)return;button.disabled=true;
     try{await send(button.dataset.action==='jw'?'openJustWatch':'openNotes',{title:button.dataset.title,slug:button.dataset.slug});}
     catch(error){let status=button.parentElement.querySelector('.justtrakt-trakt-action-status');if(!status){status=document.createElement('span');status.className='justtrakt-trakt-action-status';status.setAttribute('role','status');button.parentElement.append(status);}status.textContent=error.message;}
@@ -132,6 +159,11 @@
     finally{running=false;if(again){again=false;schedule();}}
   }
   new MutationObserver(mutations=>{if(mutations.some(m=>m.type==='attributes'||[...m.removedNodes].some(n=>!m.target.closest?.('.justtrakt-trakt-tools,.justtrakt-trakt-filterbar'))||[...m.addedNodes].some(n=>!n.parentElement?.closest('.justtrakt-trakt-date,.justtrakt-trakt-info,.justtrakt-trakt-tools,.justtrakt-trakt-filterbar')&&!(n.nodeType===1&&n.matches('.justtrakt-trakt-date,.justtrakt-trakt-info,.justtrakt-trakt-tools,.justtrakt-trakt-filterbar')))))schedule();}).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['href','src']});
-  chrome.storage.onChanged.addListener((changes,area)=>{if(area==='local'&&(changes.cache||changes.tokens||changes.lastSync||changes.username||changes.settings||changes.traktFilters))schedule();});
+  chrome.storage.onChanged.addListener((changes,area)=>{
+    if(area!=='local')return;
+    if(changes.tokens)watchlists.clear();
+    else if(changes.watchlistCache)for(const [slug,entry] of watchlists)if(!(entry.pending&&entry.operation==='write'))watchlists.delete(slug);
+    if(changes.cache||changes.tokens||changes.lastSync||changes.username||changes.settings||changes.traktFilters||changes.watchlistCache)schedule();
+  });
   window.addEventListener('popstate',schedule);document.addEventListener('DOMContentLoaded',schedule,{once:true});schedule();
 })();

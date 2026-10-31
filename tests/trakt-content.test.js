@@ -7,13 +7,13 @@ const source=readFileSync(new URL('../trakt-content.js',import.meta.url),'utf8')
 const wait=()=>new Promise(r=>setTimeout(r,260));
 function page(url,html){
   const dom=new JSDOM(html,{url,runScripts:'outside-only'});let signedIn=true,notify;const calls=[];
-  dom.window.chrome={runtime:{sendMessage:async message=>{calls.push(message);return {ok:true,dates:message.slugs.map(slug=>signedIn&&slug==='inception-2010'?{date:'2025-03-15',username:'test-user'}:null)};}},storage:{onChanged:{addListener:fn=>{notify=fn;}}}};
+  dom.window.chrome={runtime:{sendMessage:async message=>{calls.push(message);if(message.type==='traktWatchlistStatus')return {ok:true,inWatchlist:false};return {ok:true,dates:message.slugs.map(slug=>signedIn&&slug==='inception-2010'?{date:'2025-03-15',username:'test-user'}:null)};}},storage:{onChanged:{addListener:fn=>{notify=fn;}}}};
   dom.window.eval(source);return {dom,doc:dom.window.document,calls,disconnect:()=>{signedIn=false;notify({tokens:{}},'local');}};
 }
 test('Trakt movie covers show cached last seen, restore after rerender, and clear on disconnect',async t=>{
   const {dom,doc,calls,disconnect}=page('https://app.trakt.tv/discover/trending?mode=movie','<a href="/movies/inception-2010"><div class="trakt-card-cover"><img></div></a><a href="/movies/unknown"><img></a><a href="/shows/inception-2010"><img></a>');t.after(()=>dom.window.close());await wait();
   assert.equal(doc.querySelector('.justtrakt-trakt-date').textContent,'Last seen 2025-03-15');assert.equal(doc.querySelectorAll('.justtrakt-trakt-date').length,1);
-  assert.ok(calls.every(c=>c.type==='traktMovieDates'));
+  assert.ok(calls.every(c=>['traktMovieDates','traktWatchlistStatus'].includes(c.type)));
   doc.querySelector('.justtrakt-trakt-date').remove();await wait();assert.ok(doc.querySelector('.justtrakt-trakt-date'));
   const link=doc.querySelector('a[href="/movies/inception-2010"]');link.href='/shows/inception-2010';await wait();assert.equal(doc.querySelector('.justtrakt-trakt-date'),null);
   link.href='/movies/inception-2010';await wait();assert.ok(doc.querySelector('.justtrakt-trakt-date'));
@@ -41,6 +41,7 @@ test('Trakt filters hide watched cards, reset safely, and expose only the JustWa
     calls.push(message);
     if(message.type==='traktFilters'){config=message.filters;return {ok:true};}
     if(message.type==='openJustWatch'||message.type==='openNotes')return {ok:true};
+    if(message.type==='traktWatchlistStatus')return {ok:true,inWatchlist:false};
     return {ok:true,dates:message.slugs.map(slug=>slug==='inception-2010'?{date:'2020-01-01',username:'owner'}:null),movies:message.slugs.map(slug=>slug==='inception-2010'?{watched:true,plays:3,date:'2020-01-01',rewatch:true,title:'Inception',username:'owner'}:{watched:false,plays:0,date:null,rewatch:false}),settings:{},filters:config};
   };
   await wait();assert.equal(doc.querySelector('.justtrakt-trakt-count').textContent,'Seen 3 times');assert.match(doc.querySelector('.justtrakt-trakt-rewatch').textContent,/3\+ years/);
@@ -57,8 +58,23 @@ test('summary cards dock dates and actions in the right details panel without co
   assert.equal(poster.querySelector('.justtrakt-trakt-date,.justtrakt-trakt-tools'),null);
   assert.equal(dock.querySelector('.justtrakt-date-label').textContent,'Last seen');
   assert.equal(dock.querySelector('time').dateTime,'2025-03-15');
-  assert.equal(dock.querySelectorAll('button').length,1);assert.equal(dock.querySelector('[data-action="note"]'),null);
+  assert.equal(dock.querySelectorAll('button').length,2);assert.equal(dock.querySelector('[data-action="note"]'),null);
   assert.equal(details.children[0].className,'trakt-summary-card-titles');assert.equal(details.children[1],dock);assert.equal(details.children[2].className,'trakt-summary-card-tags');
   assert.equal(doc.querySelector('.trakt-summary-card-bottom-bar').textContent,'82%');
   dock.remove();await wait();assert.equal(details.querySelectorAll('.justtrakt-trakt-dock').length,1);assert.equal(poster.querySelector('.justtrakt-trakt-tools'),null);
+});
+
+for(const detail of [false,true])test(`Trakt ${detail?'detail page':'movie card'} watchlist button checks state, loads, adds and removes`,async t=>{
+  const html=detail?'<main><div class="trakt-summary-main-content"><h1>Inception</h1></div></main>':'<main><div class="trakt-card trakt-summary-card"><div class="trakt-card-content"><a href="/movies/inception-2010"><div class="trakt-card-cover"><img alt="Inception"></div><div class="trakt-summary-card-details"><div class="trakt-summary-card-titles">Inception</div></div></a></div></div></main>';
+  const {dom,doc,calls}=page(detail?'https://app.trakt.tv/movies/inception-2010':'https://app.trakt.tv/discover/trending',html);t.after(()=>dom.window.close());
+  const original=dom.window.chrome.runtime.sendMessage;let finish;
+  dom.window.chrome.runtime.sendMessage=message=>{
+    if(['traktAddWatchlist','traktRemoveWatchlist'].includes(message.type)){calls.push(message);return new Promise(resolve=>{finish=resolve;});}
+    return original(message);
+  };
+  await wait();const button=doc.querySelector('[data-action="watchlist"]');assert.equal(button.textContent,'Watchlist +');assert.equal(button.disabled,false);
+  button.click();assert.equal(button.getAttribute('aria-busy'),'true');assert.match(button.textContent,/Adding/);button.click();assert.equal(calls.filter(c=>c.type==='traktAddWatchlist').length,1);
+  finish({ok:true,inWatchlist:true});await wait();assert.equal(button.textContent,'Saved ✓');assert.equal(button.getAttribute('aria-pressed'),'true');
+  button.click();assert.match(button.textContent,/Removing/);finish({ok:true,inWatchlist:false});await wait();assert.equal(button.textContent,'Watchlist +');assert.equal(button.getAttribute('aria-busy'),'false');
+  button.click();finish({ok:false,error:'Trakt unavailable'});await wait();assert.equal(button.textContent,'Retry');assert.equal(button.disabled,false);assert.equal(button.getAttribute('aria-busy'),'false');assert.match(doc.querySelector('.justtrakt-trakt-action-status').textContent,/Trakt unavailable/);
 });

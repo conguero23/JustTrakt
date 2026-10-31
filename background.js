@@ -132,12 +132,15 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   let fromTrakt=false;
   try { const url = new URL(sender.url); fromJustWatch = url.protocol === 'https:' && (url.hostname === 'justwatch.com' || url.hostname.endsWith('.justwatch.com')); } catch {}
   try{const url=new URL(sender.url);fromTrakt=url.protocol==='https:' && ['app.trakt.tv','trakt.tv'].includes(url.hostname);}catch{}
-  if (!fromPopup && !(fromNotes&&['noteState','saveNote'].includes(message.type)) && !(fromTrakt && ['traktMovieDates','traktFilters','openNotes','openJustWatch'].includes(message.type)) && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
+  if (!fromPopup && !(fromNotes&&['noteState','saveNote'].includes(message.type)) && !(fromTrakt && ['traktMovieDates','traktFilters','openNotes','openJustWatch','traktWatchlistStatus','traktAddWatchlist','traktRemoveWatchlist'].includes(message.type)) && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
   (async () => {
     const state = await read();
     switch (message.type) {
       case 'traktMovieDates': {const slugs=Array.isArray(message.slugs)?message.slugs:[];return {dates:movieDates(state,slugs),movies:toolsForMovies(state,slugs),settings:settings(state.settings),filters:filters(state.traktFilters)};}
       case 'traktFilters': await chrome.storage.local.set({traktFilters:filters(message.filters)});return;
+      case 'traktWatchlistStatus': return await features.membershipSlug(movieSlug(message.slug));
+      case 'traktAddWatchlist': return await features.add({type:'movie',slug:movieSlug(message.slug)});
+      case 'traktRemoveWatchlist': return await features.remove({type:'movie',slug:movieSlug(message.slug)});
       case 'openJustWatch': await chrome.tabs.create({url:justWatchUrl(message.title,settings(state.settings).justWatchCountry)});return;
       case 'openNotes': await chrome.tabs.create({url:chrome.runtime.getURL(`notes.html?slug=${encodeURIComponent(movieSlug(message.slug))}`)});return;
       case 'noteState': {const keys=noteKeys(state,message.slug),note=keys.map(k=>state.movieNotes?.[k]).find(Boolean);return {text:note?.text || '',updatedAt:note?.updatedAt || null};}

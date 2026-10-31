@@ -22,6 +22,12 @@ stored locally. Clicking Find on JustWatch opens a search page for that movie
 title in your selected country; JustWatch receives that normal navigation/query
 only when clicked. The extension does not fetch provider availability in the background.
 
+Version 1.6.0 adds watchlist add/remove controls on Trakt's own movie cards and
+detail pages. Membership reads use a shared five-minute Trakt API cache. Movie
+slugs/IDs are used for exact matching; only explicit button clicks add or remove
+items in the account connected to this extension. Trakt website session tokens
+are not read or used.
+
 Private movie notes are entered on an extension-owned page, not inserted into
 Trakt's page DOM, and stored only in local extension storage. Note text is never
 sent to Trakt, JustWatch, GitHub or the developer. Limits are 4,000 characters per
