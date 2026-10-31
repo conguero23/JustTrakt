@@ -19,7 +19,7 @@
         candidates.push({ host: anchor, path });
       }
       // Detail page hero posters have no title link.
-      const detail = document.querySelector('.title-poster, .title-detail-hero .picture-comp, .title-block .picture-comp');
+      const detail = document.querySelector('.title-sidebar .title-poster, .title-detail-hero .picture-comp, .title-block .picture-comp');
       if (detail && /\/(movie|tv-show)\/[^/]+$/.test(location.pathname)) candidates.push({ host: detail, path: pathOf(location.href) });
       for (let start = 0; start < candidates.length; start += 500) {
         const batch = candidates.slice(start, start + 500);
@@ -36,14 +36,23 @@
           if (!host.isConnected) return;
           if (host.tagName === 'A' && pathOf(host.href) !== path) { schedule(); return; }
           let status = response.statuses[i];
+          const card=host.closest('.title-list-grid__item,[data-testid="titleItem"]') || (!/\/(movie|tv-show)\/[^/]+$/.test(location.pathname) ? host:null);
+          if(card)card.classList.toggle('justtrakt-filtered',!!status && status.kind==='watched' && response.settings.hideWatched===true);
+          let diagnostic=host.querySelector(':scope > .justtrakt-diagnostic');
+          if(response.settings.showDiagnostics && !status) {
+            if(!diagnostic){diagnostic=document.createElement('span');diagnostic.className='justtrakt-diagnostic';diagnostic.textContent='?';host.append(diagnostic);}
+            diagnostic.title=response.diagnostics?.[i] || 'Open the title page to check matching.';
+            if(!host.classList.contains('justtrakt-host'))host.classList.add('justtrakt-host');
+          }else diagnostic?.remove();
           if (status?.kind === 'progress' && !response.settings.showProgress) status = null;
           const signature = JSON.stringify([status, response.settings.dimWatched]);
           const existing = host.querySelector(':scope > .justtrakt-badge');
           const dimmed = !!status && status.kind === 'watched' && response.settings.dimWatched;
           // Vue may remove our child or reset classes while retaining the dataset.
-          if (host.dataset.justtrakt === signature && !!existing === !!status && host.classList.contains('justtrakt-dim') === dimmed && (!status || host.classList.contains('justtrakt-host'))) return;
+          if (host.dataset.justtrakt === signature && !!existing === !!status && !!host.querySelector(':scope > .justtrakt-last-watched')===!!status?.dateLabel && host.classList.contains('justtrakt-dim') === dimmed && (!status || host.classList.contains('justtrakt-host'))) return;
           host.dataset.justtrakt = signature;
           host.querySelector(':scope > .justtrakt-badge')?.remove();
+          host.querySelector(':scope > .justtrakt-last-watched')?.remove();
           host.classList.toggle('justtrakt-dim', dimmed);
           if (!status) return;
           host.classList.add('justtrakt-host');
@@ -51,8 +60,16 @@
           badge.textContent = status.label; badge.title = `Trakt · ${status.tooltip}`; badge.setAttribute('aria-label', badge.title);
           if (status.kind === 'progress') { const bar = document.createElement('i'); bar.style.width = `${Math.max(0, Math.min(100, status.percent))}%`; badge.append(bar); }
           host.append(badge);
+          if(status.dateLabel){const date=document.createElement('span');date.className='justtrakt-last-watched';date.textContent=status.dateLabel;host.append(date);}
         });
       }
+      const hidden=document.querySelectorAll('.justtrakt-filtered').length;
+      let filter=document.querySelector('.justtrakt-filter-note');
+      if(hidden) {
+        if(!filter){filter=document.createElement('button');filter.type='button';filter.className='justtrakt-filter-note';filter.onclick=async()=>{try{await chrome.runtime.sendMessage({type:'showAll'});}catch{}};document.body?.append(filter);}
+        const text=`${hidden} watched title${hidden===1?'':'s'} hidden · Show all`;
+        if(filter.textContent!==text)filter.textContent=text;
+      }else filter?.remove();
     } catch { /* Extension reloads invalidate old content-script contexts. */ }
     finally { running = false; if (again) { again = false; schedule(); } }
   }

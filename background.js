@@ -1,13 +1,16 @@
-import { defaults, settings, buildIndex, match } from './core.js';
+import { defaults, settings, buildIndex, match, watchedDate, diagnostic } from './core.js';
+import { createUpdateChecker } from './updates.js';
 import { createFeatures } from './trakt-features.js';
 import { AUTH, createLogin, tokenBody } from './auth.js';
 const API = 'https://api.trakt.tv';
 let syncTask, authTask, refreshTask, generation = 0;
 // Remove legacy client secrets on upgrade; public builds use PKCE only.
-const ready = chrome.storage.local.get('credentials').then(async ({credentials}) => {
+const ready = chrome.storage.local.get(null).then(async state => {
+  const {credentials}=state;
   if (credentials?.clientSecret) await chrome.storage.local.set({credentials:{clientId:credentials.clientId}});
   await chrome.storage.local.remove('device');
   await chrome.alarms.clear('auth');
+  if(state.cache && state.dataSchema!==2)await chrome.storage.local.set({...buildIndex(state.cache,settings(state.settings),state.baselines),dataSchema:2});
 });
 const read = async () => { await ready; return chrome.storage.local.get(null); };
 async function request(path, { body, token, clientId, raw = false } = {}) {
@@ -79,23 +82,28 @@ function sync(force = false) {
 chrome.alarms.create('sync', { periodInMinutes: 30 });
 chrome.alarms.onAlarm.addListener(alarm => { if(alarm.name==='sync') read().then(s=>s.tokens && sync()).catch(()=>{}); });
 const features = createFeatures({read, save: value => chrome.storage.local.set(value), request, access, pages});
+const checkUpdates=createUpdateChecker({read,save:value=>chrome.storage.local.set(value),version:chrome.runtime.getManifest?.().version || '1.3.0'});
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   const fromPopup = sender.url === chrome.runtime.getURL('popup.html');
   let fromJustWatch = false;
   try { const url = new URL(sender.url); fromJustWatch = url.protocol === 'https:' && (url.hostname === 'justwatch.com' || url.hostname.endsWith('.justwatch.com')); } catch {}
-  if (!fromPopup && !(fromJustWatch && ['match','titleDetail','addWatchlist','watchlistStatus'].includes(message.type))) return false;
+  if (!fromPopup && !(fromJustWatch && ['match','titleDetail','titleInfo','addWatchlist','removeWatchlist','watchlistStatus','showAll'].includes(message.type))) return false;
   (async () => {
     const state = await read();
     switch (message.type) {
       case 'titleDetail': return { detail: await features.detail(message.item) };
+      case 'titleInfo': return {info:await features.info(message.item)};
       case 'addWatchlist': return await features.add(message.item);
+      case 'removeWatchlist': return await features.remove(message.item);
       case 'watchlistStatus': return await features.membership(message.item);
-      case 'match': return { statuses: (message.items || []).slice(0, 1000).map(item => match(state.index || {}, item)), settings: settings(state.settings) };
-      case 'state': return { connected: !!state.tokens, username: state.username, connecting: !!authTask, redirectUri: chrome.identity.getRedirectURL('trakt'), clientId: state.credentials?.clientId || '', lastSync: state.lastSync, error: state.error, settings: settings(state.settings), configured: !!state.credentials, counts: { movies: state.cache?.movies?.length || 0, shows: state.cache?.shows?.length || 0 } };
+      case 'match': return { statuses: (message.items || []).slice(0, 1000).map(item => {const hit=match(state.index || {}, item);return hit ? {...hit,dateLabel:watchedDate(hit)}:null;}), diagnostics:(message.items || []).slice(0,1000).map(item=>diagnostic(state,item)), settings: settings(state.settings) };
+      case 'state': checkUpdates().catch(()=>{}); return { updates:state.updateCheck, version:chrome.runtime.getManifest?.().version || '1.3.0', connected: !!state.tokens, username: state.username, connecting: !!authTask, redirectUri: chrome.identity.getRedirectURL('trakt'), clientId: state.credentials?.clientId || '', lastSync: state.lastSync, error: state.error, settings: settings(state.settings), configured: !!state.credentials, counts: { movies: state.cache?.movies?.length || 0, shows: state.cache?.shows?.length || 0 } };
+      case 'checkUpdates': return {updates:await checkUpdates(true)};
+      case 'showAll': await chrome.storage.local.set({settings:{...settings(state.settings),hideWatched:false}});return;
       case 'connect': await connect(message.clientId?.trim()); return;
       case 'sync': await sync(true); return;
       case 'settings': { const value = settings(message.settings); await chrome.storage.local.set({ settings: value, ...buildIndex(state.cache, value, state.baselines) }); return; }
-      case 'disconnect': generation++; await chrome.storage.local.remove(['tokens','credentials','device','username','cache','activities','index','baselines','lastSync','lastFullSync','error','titleDetails','watchlistCache']); return;
+      case 'disconnect': generation++; await chrome.storage.local.remove(['tokens','credentials','device','username','cache','activities','index','baselines','lastSync','lastFullSync','error','titleDetails','watchlistCache','showProgress']); return;
       default: throw new Error('Unknown action.');
     }
   })().then(data => reply({ ok: true, ...data }), e => reply({ ok: false, error: e.message })); return true;

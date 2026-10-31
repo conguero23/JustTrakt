@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildIndex, match, defaults, settings } from '../core.js';
+import { buildIndex, match, defaults, settings, watchedDate, diagnostic } from '../core.js';
 const movie = {title:'The Example',year:2020,ids:{trakt:1,imdb:'tt1',tmdb:10}};
 const show = {title:'A Show',year:2021,ids:{trakt:2,imdb:'tt2',tmdb:10},aired_episodes:2};
 test('movie thresholds and watched history precedence', () => {
@@ -31,3 +31,17 @@ test('matching requires year and type, isolates TMDB namespaces, refuses collisi
   assert.equal(match(collision,{title:'Example',year:2020,type:'movie'}),null);
 });
 test('invalid settings rejected', () => { assert.throws(()=>settings({minProgress:90,completeProgress:5})); assert.throws(()=>settings({minProgress:NaN})); });
+test('movie dates always display; shows require strictly more than one calendar year',()=>{
+  const now=Date.parse('2026-10-31T12:00:00Z');
+  assert.equal(watchedDate({id:'movie:1',lastWatchedAt:'2026-10-30T12:00:00Z'},now),'Last watched 2026-10-30');
+  assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2026-01-01T12:00:00Z'},now),null);
+  assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2025-10-31T12:00:00Z'},now),null);
+  assert.equal(watchedDate({id:'show:1',lastWatchedAt:'2025-10-31T11:59:59Z'},now),'Last watched 2025-10-31');
+  assert.equal(watchedDate({id:'movie:1',lastWatchedAt:'invalid'},now),null);
+  assert.equal(watchedDate({id:'movie:1',lastWatchedAt:'2030-01-01'},now),null);
+});
+test('diagnostics distinguish missing credentials, sync and uncertain match',()=>{
+  assert.match(diagnostic({},{}),/Connect Trakt/);
+  assert.match(diagnostic({tokens:{}},{}),/Sync needed/);
+  assert.match(diagnostic({tokens:{},cache:{},lastSync:Date.now()},{}),/No reliable match/);
+});

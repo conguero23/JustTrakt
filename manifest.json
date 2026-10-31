@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "JustTrakt — Watched on JustWatch",
-  "version": "1.2.0",
+  "name": "JustTrakt \u00e2\u20ac\u201d Watched on JustWatch",
+  "version": "1.3.0",
   "description": "Your Trakt history, right on JustWatch posters.",
   "permissions": [
     "storage",
@@ -11,7 +11,8 @@
   "host_permissions": [
     "https://auth.trakt.tv/*",
     "https://api.trakt.tv/*",
-    "https://*.justwatch.com/*"
+    "https://*.justwatch.com/*",
+    "https://api.github.com/repos/conguero23/JustTrakt/releases*"
   ],
   "background": {
     "service_worker": "background.js",

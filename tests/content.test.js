@@ -10,7 +10,7 @@ function page(status = {kind:'watched', label:'✓', tooltip:'Watched'}) {
   let notify;
   const preferences = {dimWatched:true, showProgress:true};
   dom.window.chrome = {
-    runtime: { sendMessage: async ({items}) => ({ok:true, statuses:items.map(()=>status), settings:preferences}) },
+    runtime: { sendMessage: async ({items,type}) => {if(type==='showAll'){preferences.hideWatched=false;notify({settings:{}},'local');return {ok:true};}return {ok:true, statuses:items.map(()=>status), diagnostics:items.map(()=> 'No reliable match: release year missing.'),settings:preferences};} },
     storage: {onChanged:{addListener:fn=>{notify=fn;}}}
   };
   dom.window.eval(source);
@@ -28,6 +28,25 @@ test('restores badge removed by hydration and repairs dimming without losing wat
   assert.ok(host.classList.contains('justtrakt-host'));
   assert.ok(host.classList.contains('justtrakt-dim'));
   assert.equal(host.querySelectorAll('.justtrakt-badge').length,1);
+});
+
+test('hide watched is reversible and last-watched dates survive DOM replacement',async t=>{
+  const {dom,host,preferences,notify}=page({kind:'watched',label:'✓',tooltip:'Watched',dateLabel:'Last watched 2025-01-01'});
+  t.after(()=>dom.window.close());await pause();
+  assert.equal(host.querySelector('.justtrakt-last-watched').textContent,'Last watched 2025-01-01');
+  preferences.hideWatched=true;notify();await pause();
+  assert.ok(host.classList.contains('justtrakt-filtered'));
+  dom.window.document.querySelector('.justtrakt-filter-note').click();await pause();
+  assert.equal(host.classList.contains('justtrakt-filtered'),false);
+  host.querySelector('.justtrakt-last-watched').remove();await pause();
+  assert.ok(host.querySelector('.justtrakt-last-watched'));
+});
+test('missing badge diagnostics are optional and do not claim watched status',async t=>{
+  const {dom,host,preferences,notify}=page(null);t.after(()=>dom.window.close());await pause();
+  assert.equal(host.querySelector('.justtrakt-diagnostic'),null);
+  preferences.showDiagnostics=true;notify();await pause();
+  assert.match(host.querySelector('.justtrakt-diagnostic').title,/release year missing/);
+  assert.equal(host.querySelector('.justtrakt-badge'),null);
 });
 test('progress includes percentage and episode count; settings update existing posters', async t => {
   const {dom,host,preferences,notify}=page({kind:'progress',label:'60% · 12/20 eps',percent:60,tooltip:'12/20 episodes watched'});

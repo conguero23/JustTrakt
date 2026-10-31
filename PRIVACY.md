@@ -2,8 +2,11 @@
 
 Effective October 31, 2026. Applies to the unmodified JustTrakt extension.
 
-JustTrakt is an independent, locally running browser extension. It has no
+JustTrakt is an independent browser extension. It has no
 developer-operated backend, analytics, ads, telemetry, or crash-report service.
+
+Updated for version 1.3.0: GitHub release checks and clicked watchlist removals
+are described below.
 
 ## Data used
 
@@ -29,6 +32,16 @@ JustWatch continues receiving its normal website requests. Trakt and JustWatch
 have their own privacy policies and may receive normal connection information
 such as your IP address.
 
+When update checks are enabled (the default), opening the popup can send one
+public release-list request per day to GitHub. Check for updates can request it
+immediately. This request sends no Trakt credentials, watch history, JustWatch
+title data, or extension identifier. GitHub receives ordinary connection details
+such as your IP address. Disable checks in preferences to stop these requests.
+No extension code is downloaded or executed automatically; installation stays
+manual. Clicked watchlist removals are sent to Trakt. Show pages request watched
+progress on demand to display the next episode, cached for 15 minutes (up to 300
+shows). Last-watched dates come from your existing watched-history sync.
+
 ## Retention and control
 
 History and tokens remain until you disconnect or uninstall. Display preferences
@@ -42,6 +55,9 @@ ratings, and matching data. It does not delete or reverse anything in your Trakt
 account and does not revoke the app's authorization server-side. You can revoke
 that authorization in Trakt's connected-app settings. Uninstall to remove the
 extension's remaining settings. The developer holds no server-side copy to delete.
+
+Disconnect also clears show-progress caches. Public GitHub update metadata and
+display preferences are retained; uninstall removes them.
 
 ## Support and changes
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — 2026-10-31
+
+- Optional hide-watched filter with a Show all control; detail pages stay accessible.
+- Add/remove Trakt watchlist controls with cached membership and inline errors.
+- Trakt ratings link directly to the matching movie or show on Trakt.
+- Next episode and remaining aired count on show pages, fetched on demand.
+- Last-watched dates on movie posters/detail pages; show dates only after more than one calendar year.
+- Optional missing-badge diagnostics and expandable matching details on title pages.
+- Daily public GitHub release checks, manual check and popup update notices, with an off switch.
+- Watched history remains read-only. No personal-rating feature added.
+
 ## 1.2.0 — 2026-10-31
 
 - PKCE browser login through auth.trakt.tv; no Client Secret input or storage.

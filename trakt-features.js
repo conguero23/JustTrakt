@@ -1,4 +1,4 @@
-import { normalize } from './core.js';
+import { normalize, watchedDate, diagnostic } from './core.js';
 
 export function titleKey(item) {
   if (!['movie', 'show'].includes(item?.type)) throw new Error('Unknown title type.');
@@ -9,7 +9,7 @@ export function titleKey(item) {
 }
 
 export function createFeatures({ read, save, request, access, pages }) {
-  const pending = new Map();
+  const pending = new Map(), mutations = new Map();
   let queue = Promise.resolve(), blockedUntil = 0;
   function serial(work) {
     const task = queue.then(async () => {
@@ -48,22 +48,23 @@ export function createFeatures({ read, save, request, access, pages }) {
     }).finally(()=>pending.delete(key));
     pending.set(key,task); return task;
   }
-  async function add(item) {
-    const title = await detail(item), key = `add:${title.type}:${title.trakt}`;
+  async function changeWatchlist(item, remove = false) {
+    const title = await detail(item), base=`write:${title.type}:${title.trakt}`, key = `${base}:${remove}`;
     if (pending.has(key)) return pending.get(key);
     // User writes must not wait behind the rating request queue.
-    const task = (async () => {
-      if ((await membership(item)).inWatchlist) return {added:true, existing:true};
+    const task = (mutations.get(base) || Promise.resolve()).catch(()=>{}).then(async () => {
+      if (!remove && (await membership(item)).inWatchlist) return {added:true, existing:true, inWatchlist:true};
       const state = await read(), token = await access(state);
       const plural = title.type === 'movie' ? 'movies' : 'shows';
-      const result = await request('/sync/watchlist', {clientId:state.credentials.clientId, token, body:{[plural]:[{ids:{trakt:title.trakt}}]}});
-      if (result.not_found?.[plural]?.length || !((result.added?.[plural] || 0) + (result.existing?.[plural] || 0))) throw new Error('Trakt did not add this title to your watchlist.');
+      const result = await request(remove ? '/sync/watchlist/remove' : '/sync/watchlist', {clientId:state.credentials.clientId, token, body:{[plural]:[{ids:{trakt:title.trakt}}]}});
+      if (result.not_found?.[plural]?.length || (remove ? !(result.deleted && Number.isFinite(result.deleted[plural])) : !((result.added?.[plural] || 0) + (result.existing?.[plural] || 0)))) throw new Error(`Trakt did not ${remove ? 'remove' : 'add'} this title ${remove ? 'from' : 'to'} your watchlist.`);
       const current = await read();
       if (!current.tokens || current.credentials?.clientId !== state.credentials.clientId) throw new Error('Account changed.');
       const snapshot = current.watchlistCache?.[title.type] || {ids:[],fetchedAt:Date.now()};
-      await save({watchlistCache:{...current.watchlistCache,[title.type]:{...snapshot,ids:[...new Set([...snapshot.ids,title.trakt])]}}});
-      return {added:true, existing:!!result.existing?.[plural]};
-    })().finally(()=>pending.delete(key));
+      await save({watchlistCache:{...current.watchlistCache,[title.type]:{...snapshot,ids:remove ? snapshot.ids.filter(id=>id!==title.trakt) : [...new Set([...snapshot.ids,title.trakt])]}}});
+      return {added:!remove, removed:remove, inWatchlist:!remove, existing:!!result.existing?.[plural]};
+    }).finally(()=>{pending.delete(key);if(mutations.get(base)===task)mutations.delete(base);});
+    mutations.set(base,task);
     pending.set(key, task); return task;
   }
   async function membership(item) {
@@ -87,5 +88,28 @@ export function createFeatures({ read, save, request, access, pages }) {
     }
     return {inWatchlist:snapshot.ids.includes(title.trakt),trakt:title.trakt};
   }
-  return { detail, add, membership };
+  async function info(item) {
+    const title=await detail(item),state=await read();
+    const status=state.index?.[`trakt:${title.type}:${title.trakt}`] || Object.values(state.index || {}).find(s=>s.id===`${title.type}:${title.trakt}`);
+    const result={traktUrl:`https://trakt.tv/${title.type==='movie'?'movies':'shows'}/${title.trakt}`,lastWatched:watchedDate(status),diagnostic:status ? diagnostic(state,item,status) : !state.cache ? 'Sync needed: no history has been downloaded yet.' : state.error || !state.lastSync || Date.now()-state.lastSync>3600000 ? 'Sync needed: showing cached history.' : 'Matched on Trakt. No watched history in your last sync.'};
+    if(title.type!=='show')return result;
+    const key=String(title.trakt),cached=state.showProgress?.[key];
+    if(cached && cached.sync===state.lastFullSync && Date.now()-cached.fetchedAt<900000)return {...result,progress:cached.value};
+    const taskKey=`progress:${key}`;
+    if(!pending.has(taskKey)) {
+      const task=(async()=>{
+        const token=await access(await read());
+        const progress=await request(`/shows/${title.trakt}/progress/watched?hidden=false&specials=false&count_specials=false`,{token,clientId:state.credentials.clientId});
+        if(!Number.isFinite(progress.aired)||!Number.isFinite(progress.completed))throw new Error('Trakt did not return show progress.');
+        const remaining=Math.max(0,progress.aired-progress.completed),next=progress.next_episode;
+        const value={remaining,next:remaining>0 && next?.season>0 && next?.number>0 ? {season:next.season,number:next.number,title:next.title || ''}:null};
+        const current=await read();
+        if(!current.tokens || current.credentials?.clientId!==state.credentials.clientId)throw new Error('Account changed.');
+        const entries=Object.entries({...current.showProgress,[key]:{value,sync:state.lastFullSync,fetchedAt:Date.now()}}).sort((a,b)=>b[1].fetchedAt-a[1].fetchedAt).slice(0,300);
+        await save({showProgress:Object.fromEntries(entries)});return value;
+      })().finally(()=>pending.delete(taskKey));pending.set(taskKey,task);
+    }
+    try {return {...result,progress:await pending.get(taskKey)};}catch(error){return {...result,progressError:error.message};}
+  }
+  return { detail, add:item=>changeWatchlist(item), remove:item=>changeWatchlist(item,true), membership, info };
 }

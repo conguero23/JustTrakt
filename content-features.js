@@ -1,5 +1,5 @@
 (() => {
-  const metadata = new Map(), ratings = new Map(), added = new Set(), memberships = new Map();
+  const metadata = new Map(), ratings = new Map(), memberships = new Map();
   const ratingNodes = new WeakMap();
   let timer, activePath;
   const pathOf = value => { try { const p = new URL(value, location.origin).pathname.replace(/\/$/,''); return /\/(movie|tv-show)\/[^/]+$/.test(p) ? p : null; } catch { return null; } };
@@ -69,10 +69,11 @@
       }
       const result=await cached.promise;
       if (!button.isConnected || button.dataset.key!==key || button.justtraktAdding) return;
-      const saved=result.inWatchlist || added.has(key);
-      button.justtraktNeedsCheck=false; button.disabled=saved;
+      const saved=result.inWatchlist;
+      button.justtraktNeedsCheck=false; button.disabled=false;button.justtraktSaved=saved;
       button.textContent=saved?'✓ In Trakt watchlist':'+ Add to Trakt watchlist';
-      button.title=saved?'Already saved in your Trakt watchlist':'Save this title to your Trakt watchlist';
+      button.title=saved?'Remove this title from your Trakt watchlist':'Save this title to your Trakt watchlist';
+      button.setAttribute('aria-label',button.title);
       button.parentElement.querySelector('.justtrakt-action-error')?.remove();
     } catch(error) {
       if (button.dataset.key!==key) return;
@@ -97,10 +98,12 @@
         const selected = button.justtraktItem, selectedKey=keyOf(selected);
         if (button.justtraktNeedsCheck) { await checkMembership(button,selected,selectedKey);return; }
         button.justtraktAdding=true;
-        button.disabled=true; button.textContent='Adding to Trakt…';
+        const removing=button.justtraktSaved;
+        button.disabled=true; button.textContent=removing?'Removing from Trakt…':'Adding to Trakt…';
         try {
-          await send('addWatchlist',selected); added.add(selectedKey);
-          if (keyOf(button.justtraktItem) === selectedKey) { button.textContent='✓ In Trakt watchlist'; button.title='Saved to your Trakt watchlist'; button.parentElement.querySelector('.justtrakt-action-error')?.remove(); }
+          await send(removing?'removeWatchlist':'addWatchlist',selected);
+          memberships.set(selectedKey,{promise:Promise.resolve({inWatchlist:!removing}),until:Date.now()+60000});
+          if (keyOf(button.justtraktItem) === selectedKey) { button.justtraktSaved=!removing;button.disabled=false;button.textContent=removing?'+ Add to Trakt watchlist':'✓ In Trakt watchlist';button.title=removing?'Save this title to your Trakt watchlist':'Remove this title from your Trakt watchlist';button.setAttribute('aria-label',button.title);button.parentElement.querySelector('.justtrakt-action-error')?.remove(); }
         } catch(error) {
           if (keyOf(button.justtraktItem) === selectedKey) { button.textContent='Retry Trakt watchlist'; button.title=error.message; button.disabled=false;
             showError(button,error);
@@ -117,6 +120,26 @@
     }
     if (!original.classList.contains('justtrakt-replaced')) original.classList.add('justtrakt-replaced');
   }
+  function titleInfo(actions,item) {
+    const key=keyOf(item);
+    let panel=actions.querySelector('.justtrakt-title-info');
+    if(panel?.dataset.key===key)return;
+    panel?.remove();panel=document.createElement('div');panel.className='justtrakt-title-info';panel.dataset.key=key;panel.textContent='Checking Trakt details…';actions.append(panel);
+    send('titleInfo',item).then(({info})=>{
+      if(!info || !panel.isConnected || panel.dataset.key!==key)return;
+      panel.replaceChildren();
+      const addLine=(text,cls)=>{const line=document.createElement('p');line.className=cls;line.textContent=text;panel.append(line);};
+      if(info.lastWatched)addLine(info.lastWatched,'justtrakt-info-date');
+      if(info.progress){
+        const {next,remaining}=info.progress;
+        const code=next ? `S${String(next.season).padStart(2,'0')}E${String(next.number).padStart(2,'0')}`:null;
+        addLine(remaining===0?'Up to date with aired episodes':`${code ? `Next: ${code} · `:''}${remaining} aired episode${remaining===1?'':'s'} remaining`,'justtrakt-next-episode');
+      }
+      if(info.progressError)addLine(`Episode progress unavailable: ${info.progressError}`,'justtrakt-info-diagnostic');
+      const diagnostic=document.createElement('details');diagnostic.className='justtrakt-info-diagnostic';const summary=document.createElement('summary');summary.textContent='Trakt matching details';diagnostic.append(summary);
+      const text=document.createElement('p');text.textContent=info.diagnostic;diagnostic.append(text);panel.append(diagnostic);
+    }).catch(error=>{if(panel.isConnected)panel.textContent=`Trakt matching: ${error.message}`;});
+  }
   function scan() {
     const detailPath=pathOf(location.href), hero=document.querySelector('.title-detail-hero__details');
     if (detailPath && hero) {
@@ -129,6 +152,7 @@
           actions.append(anchor);hero.append(actions);
         }
         watchlist(actions.querySelector('.justtrakt-detail-anchor'),item);
+        titleInfo(actions,item);
       }
     } else document.querySelectorAll('.justtrakt-detail-actions').forEach(n=>n.remove());
     for (const original of document.querySelectorAll('.watch-now-button')) {
@@ -141,11 +165,12 @@
       const key=keyOf(item);
       if (ratingNodes.get(row) === key && row.querySelector('.justtrakt-rating')) continue;
       ratingNodes.set(row,key); row.querySelector('.justtrakt-rating')?.remove();
-      const label=document.createElement('span'); label.className='justtrakt-rating';
+      const label=document.createElement('a'); label.className='justtrakt-rating';label.target='_blank';label.rel='noopener noreferrer';label.setAttribute('aria-label','Open this title on Trakt');label.addEventListener('click',e=>e.stopPropagation());
       const logo=document.createElement('img'); logo.src=chrome.runtime.getURL('assets/trakt.svg');logo.alt='Trakt';logo.className='justtrakt-rating-logo';
       const score=document.createElement('span');score.textContent='…';label.append(logo,score);row.append(label);
       rating(item).then(detail=> {
         if (!label.isConnected || ratingNodes.get(row)!==key) return;
+        if(detail.trakt)label.href=`https://trakt.tv/${item.type==='movie'?'movies':'shows'}/${detail.trakt}`;
         score.textContent=detail.votes>0 && detail.rating!==null ? `${Math.round(detail.rating*10)}%` : '—';
         label.title=`Trakt community rating · ${Number(detail.votes).toLocaleString()} votes`;
       }).catch(error=> { if(label.isConnected) {score.textContent='—';label.title=error.message;} });
@@ -155,9 +180,10 @@
     if (mutations.some(m=>m.type==='attributes' || m.removedNodes.length || [...m.addedNodes].some(n=>!(n.parentElement?.closest('[class^="justtrakt-"]') || n.nodeType===1 && n.className?.startsWith?.('justtrakt-'))))) schedule();
   }).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['href']});
   chrome.storage.onChanged.addListener((changes,area)=>{
+    if(area==='local' && changes.lastFullSync){document.querySelectorAll('.justtrakt-title-info').forEach(n=>n.remove());schedule();}
     if (area==='local' && (changes.tokens || changes.watchlistCache?.oldValue)) {
-      memberships.clear();added.clear();document.querySelectorAll('.justtrakt-watchlist').forEach(n=>{if(!n.justtraktAdding)n.dataset.key='';});
-      if(changes.tokens) {ratings.clear();document.querySelectorAll('.justtrakt-rating').forEach(n=>n.remove());}
+      memberships.clear();document.querySelectorAll('.justtrakt-watchlist').forEach(n=>{if(!n.justtraktAdding)n.dataset.key='';});
+      if(changes.tokens) {ratings.clear();document.querySelectorAll('.justtrakt-rating').forEach(n=>n.remove());document.querySelectorAll('.justtrakt-title-info').forEach(n=>n.remove());}
       schedule();
     }
   });
