@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 test('public popup defaults to development device login and keeps production PKCE available',async t=>{
   const dom=new JSDOM(readFileSync(new URL('../popup.html',import.meta.url),'utf8'),{url:'chrome-extension://test/popup.html',runScripts:'outside-only'});
   t.after(()=>dom.window.close());
-  const calls=[],state={ok:true,connected:false,connecting:false,redirectUri:'https://test.chromiumapp.org/trakt',counts:{movies:0,shows:0},settings:{minProgress:5,completeProgress:90,dimWatched:false,showProgress:true}};
+  const calls=[],state={ok:true,connected:false,connecting:false,redirectUri:'https://test.chromiumapp.org/trakt',counts:{movies:0,shows:0},settings:{minProgress:5,completeProgress:90,dimWatched:false,showProgress:true,traktPosterGrid:true}};
   dom.window.chrome={runtime:{sendMessage:async message=>{calls.push(message);return state;}}};
   dom.window.eval(readFileSync(new URL('../popup.js',import.meta.url),'utf8'));
   await new Promise(resolve=>setTimeout(resolve,20));
@@ -25,6 +25,7 @@ test('public popup defaults to development device login and keeps production PKC
   await new Promise(resolve=>setTimeout(resolve,20));
   const login=calls.find(c=>c.type==='connect');
   assert.equal(login.clientId,'a'.repeat(64));assert.equal(login.mode,'device');assert.equal('clientSecret' in login,false);
-  d.querySelector('#justWatchIt').click();await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(d.querySelector('#justWatchIt'),null);
+  d.querySelector('#settings').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await new Promise(resolve=>setTimeout(resolve,20));
   const layout=calls.find(c=>c.type==='settings');assert.equal(layout.settings.traktPosterGrid,true);assert.equal(layout.settings.minProgress,5);assert.equal(layout.settings.showProgress,true);
 });

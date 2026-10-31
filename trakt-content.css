@@ -55,3 +55,13 @@
 @media(hover:none){.justtrakt-grid-card .trakt-summary-card-details{opacity:1;transform:none;pointer-events:auto}}
 @media(max-width:480px){.justtrakt-poster-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px 9px!important}}
 @media(prefers-reduced-motion:reduce){.justtrakt-grid-card .trakt-summary-card-details{transition:none;transform:none}}
+.justtrakt-trakt-filterbar .justtrakt-grid-toggle,.justtrakt-grid-toolbar .justtrakt-grid-toggle{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:6px 11px;border:1px solid #526173;border-radius:5px;background:#192432;color:#e8edf3;font:600 12px/1.2 inherit;cursor:pointer;white-space:nowrap}
+.justtrakt-grid-toggle::before{content:"";width:12px;height:12px;display:inline-block;background:linear-gradient(currentColor,currentColor) 0 0/5px 5px,linear-gradient(currentColor,currentColor) 100% 0/5px 5px,linear-gradient(currentColor,currentColor) 0 100%/5px 5px,linear-gradient(currentColor,currentColor) 100% 100%/5px 5px;background-repeat:no-repeat}
+.justtrakt-trakt-filterbar .justtrakt-grid-toggle[aria-pressed=true],.justtrakt-grid-toolbar .justtrakt-grid-toggle[aria-pressed=true]{background:#d5ef83;border-color:#d5ef83;color:#18200c}
+.justtrakt-grid-toggle:focus-visible{outline:2px solid #d5ef83;outline-offset:3px}.justtrakt-grid-toggle:disabled{opacity:.6;cursor:progress}.justtrakt-grid-toolbar{display:flex;justify-content:flex-end;margin:12px 0}
+.justtrakt-poster-grid .justtrakt-grid-card{background:#0d1824!important;border-color:#203043!important;border-radius:7px!important}
+.justtrakt-poster-grid .justtrakt-grid-card:hover,.justtrakt-poster-grid .justtrakt-grid-card:focus-within{border-color:#d5ef83!important;box-shadow:0 0 0 1px #d5ef8340,0 8px 24px #0006}
+.justtrakt-poster-grid .justtrakt-grid-card .trakt-summary-card-details{background:linear-gradient(transparent,#07111df5 35%,#07111d)!important}
+.justtrakt-grid-card .justtrakt-trakt-dock>.justtrakt-trakt-date{border-left-color:#d5ef83}
+.justtrakt-grid-card .justtrakt-trakt-actions [data-action=watchlist]{background:#d5ef83;border-color:#d5ef83;color:#18200c}
+.justtrakt-grid-card .justtrakt-external{color:#d5ef83}

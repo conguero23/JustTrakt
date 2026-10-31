@@ -22,7 +22,7 @@
       const field=document.createElement('label');field.textContent=label;
       const input=document.createElement('input');input.type=type;input.dataset.filter=name;if(type==='number'){input.min='0';input.step='1';}field.append(input);bar.append(field);
     }
-    const reset=document.createElement('button');reset.type='button';reset.textContent='Show all / Reset';bar.append(reset);
+    const reset=document.createElement('button');reset.type='button';reset.dataset.action='reset-filters';reset.textContent='Show all / Reset';bar.append(reset);
     const status=document.createElement('span');status.className='justtrakt-trakt-filter-status';status.setAttribute('role','status');bar.append(status);
     const save=async(resetAll=false)=>{
       const next={...filterDefaults};

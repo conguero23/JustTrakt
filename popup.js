@@ -19,7 +19,6 @@ async function render() {
   $('movies').textContent = state.counts.movies.toLocaleString(); $('shows').textContent = state.counts.shows.toLocaleString();
   $('lastSync').textContent = state.lastSync ? `Synced ${new Date(state.lastSync).toLocaleString()}` : 'Never synced';
   if (!editing) for (const key of ['minProgress','completeProgress','dimWatched','showProgress','hideWatched','showDiagnostics','checkUpdates','traktLastSeen','traktWatchCounts','traktRewatch','justWatchCountry']) { const input = $(key); if (input.type === 'checkbox') input.checked = state.settings[key] ?? ['checkUpdates','traktLastSeen','traktWatchCounts','traktRewatch','justWatchCountry'].includes(key); else input.value = state.settings[key] ?? (key==='justWatchCountry'?'us':''); }
-  $('justWatchIt').setAttribute('aria-pressed',String(state.settings.traktPosterGrid===true));
   const update=state.updates?.available;
   $('updateNotice').hidden=!update || state.settings.checkUpdates===false;
   if(update){$('updateLink').href=update.url;$('updateLink').textContent=`JustTrakt ${update.version}${update.prerelease?' beta':''} is available`;}
@@ -34,11 +33,10 @@ $('loginMode').onchange=loginMethod;
 $('cancelLogin').onclick=()=>act($('cancelLogin'),()=>send('cancelLogin'));
 $('sync').onclick = () => act($('sync'), () => send('sync'));
 $('disconnect').onclick = () => act($('disconnect'), () => send('disconnect'));
-$('justWatchIt').onclick=()=>act($('justWatchIt'),async()=>{const state=await send('state');const enabled=state.settings.traktPosterGrid!==true;await send('settings',{settings:{...state.settings,traktPosterGrid:enabled}});notice(enabled?'JustWatchIt grid enabled. Open or refresh a Trakt movie/show grid.':'Trakt layout restored.');});
 $('checkUpdate').onclick = () => act($('checkUpdate'),()=>send('checkUpdates'));
 $('copyRedirect').onclick = () => act($('copyRedirect'), async () => { await navigator.clipboard.writeText($('redirectUri').value); notice('Redirect URL copied.'); });
 $('settings').addEventListener('input', () => { editing = true; });
-$('settings').addEventListener('submit', e => { e.preventDefault(); act($('save'), async () => { await send('settings', { settings: { minProgress: Number($('minProgress').value), completeProgress: Number($('completeProgress').value), dimWatched: $('dimWatched').checked, showProgress: $('showProgress').checked, hideWatched:$('hideWatched').checked, showDiagnostics:$('showDiagnostics').checked, checkUpdates:$('checkUpdates').checked, traktLastSeen:$('traktLastSeen').checked, traktPosterGrid:$('justWatchIt').getAttribute('aria-pressed')==='true', traktWatchCounts:$('traktWatchCounts').checked, traktRewatch:$('traktRewatch').checked, justWatchCountry:$('justWatchCountry').value.trim().toLowerCase() } }); editing = false; notice('Preferences saved.'); }); });
+$('settings').addEventListener('submit', e => { e.preventDefault(); act($('save'), async () => { const state=await send('state');await send('settings', { settings: { ...state.settings, minProgress: Number($('minProgress').value), completeProgress: Number($('completeProgress').value), dimWatched: $('dimWatched').checked, showProgress: $('showProgress').checked, hideWatched:$('hideWatched').checked, showDiagnostics:$('showDiagnostics').checked, checkUpdates:$('checkUpdates').checked, traktLastSeen:$('traktLastSeen').checked, traktWatchCounts:$('traktWatchCounts').checked, traktRewatch:$('traktRewatch').checked, justWatchCountry:$('justWatchCountry').value.trim().toLowerCase() } }); editing = false; notice('Preferences saved.'); }); });
 let refreshing=false;
 setInterval(async () => { if(refreshing)return;refreshing=true;try { await send('pollDevice');await render(); } catch(e) { notice(e.message); }finally{refreshing=false;} }, 1500);
 render().catch(e => notice(e.message));

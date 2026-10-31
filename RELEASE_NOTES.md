@@ -1,17 +1,15 @@
-# JustTrakt 1.7.0 (Beta)
+# JustTrakt 1.7.1 (Beta)
 
-Try **JustWatchIt** beside Movie last-seen dates in the extension popup.
-It immediately switches supported Trakt movie/show card grids to a compact,
-responsive poster wall. Hover or focus covers to see details and actions.
-Click again to restore Trakt's layout. Off by default.
+**JustWatchIt is now in the Trakt page filter bar, beside Last seen before.**
+It has been removed from the extension popup.
 
-Existing links, ratings and controls remain in place; no extra permissions,
-API calls or watch-history changes. Positioned virtual lists and incompatible
-section layouts remain unchanged. Last-seen dates remain movie-only.
+Click it to switch supported movie/show cards to a JustWatch-style poster grid:
+tall covers, dark blue surfaces, lime accents and hover/focus details.
+Click again to restore Trakt. Show-only grids get a compact on-page toolbar.
+Your chosen mode persists, including when saving other popup preferences.
 
-Download **justtrakt-1.7.0.zip**, replace the extension files, Reload in
-chrome://extensions, and refresh Trakt tabs to load the new grid script.
-Your extension ID, login and settings stay unchanged.
+Download **justtrakt-1.7.1.zip**, replace the extension files, Reload in
+chrome://extensions and refresh Trakt tabs. Your login and settings remain.
 
-Validation: automated DOM fixtures and local desktop/mobile browser previews.
-Live Trakt page layouts may vary; this is an experimental display option.
+Validated with 48 automated tests and a local browser preview of the actual
+page button, hover controls and layout restoration. Live Trakt layouts may vary.

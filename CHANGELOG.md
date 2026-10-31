@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.1 - 2026-10-31
+
+- Move JustWatchIt into the on-page filter bar beside Last seen before; remove the popup button.
+- Add a page toolbar on show-only grids and retain the selected layout when saving popup preferences.
+- Style the poster-grid mode with dark blue surfaces, lime accents and hover details.
+
 ## 1.7.0 - 2026-10-31
 
 - Add the reversible JustWatchIt experiment beside Movie last-seen dates in the popup.

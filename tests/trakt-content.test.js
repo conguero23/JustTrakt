@@ -47,7 +47,7 @@ test('Trakt filters hide watched cards, reset safely, and expose only the JustWa
   await wait();assert.equal(doc.querySelector('.justtrakt-trakt-count'),null);assert.match(doc.querySelector('.justtrakt-trakt-date').textContent,/Last seen \(3\)/);assert.match(doc.querySelector('.justtrakt-trakt-rewatch').textContent,/3\+ years/);
   const input=doc.querySelector('[data-filter="hideWatched"]');input.checked=true;input.dispatchEvent(new dom.window.Event('change',{bubbles:true}));await wait();
   assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,1);
-  doc.querySelector('.justtrakt-trakt-filterbar > button').click();await wait();assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,0);
+  doc.querySelector('.justtrakt-trakt-filterbar [data-action=reset-filters]').click();await wait();assert.equal(doc.querySelectorAll('.justtrakt-trakt-filtered').length,0);
   doc.querySelector('[data-action="jw"]').click();await wait();assert.equal(calls.find(c=>c.type==='openJustWatch').title,'Inception');
   assert.equal(doc.querySelector('[data-action="note"]'),null);assert.equal(calls.find(c=>c.type==='openNotes'),undefined);
 });
